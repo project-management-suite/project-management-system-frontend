@@ -497,10 +497,14 @@ const AssignDevelopersModal = ({ task, onClose, onSuccess }: AssignDevelopersMod
 
   useEffect(() => {
     const fetchDevelopers = async () => {
-      const { data } = await supabase
+      console.log('Fetching developers...'); // Debug log
+      const { data, error } = await supabase
         .from('profiles')
         .select('user_id, username, email')
         .eq('role', 'DEVELOPER');
+
+      console.log('Developers data:', data); // Debug log
+      console.log('Developers error:', error); // Debug log
 
       setDevelopers(data || []);
 
@@ -576,23 +580,30 @@ const AssignDevelopersModal = ({ task, onClose, onSuccess }: AssignDevelopersMod
         <p className="text-gray-600 mb-6">Select developers to assign to this task</p>
 
         <div className="space-y-2 max-h-96 overflow-y-auto mb-6">
-          {developers.map((dev) => (
-            <label
-              key={dev.user_id}
-              className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
-            >
-              <input
-                type="checkbox"
-                checked={selectedDevelopers.includes(dev.user_id)}
-                onChange={() => handleToggleDeveloper(dev.user_id)}
-                className="w-5 h-5 text-blue-600"
-              />
-              <div>
-                <div className="font-medium text-gray-800">{dev.username}</div>
-                <div className="text-sm text-gray-600">{dev.email}</div>
-              </div>
-            </label>
-          ))}
+          {developers.length === 0 ? (
+            <div className="p-4 text-center text-gray-500">
+              <p>No developers found.</p>
+              <p className="text-sm">Make sure there are users with the DEVELOPER role.</p>
+            </div>
+          ) : (
+            developers.map((dev) => (
+              <label
+                key={dev.user_id}
+                className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedDevelopers.includes(dev.user_id)}
+                  onChange={() => handleToggleDeveloper(dev.user_id)}
+                  className="w-5 h-5 text-blue-600"
+                />
+                <div>
+                  <div className="font-medium text-gray-800">{dev.username}</div>
+                  <div className="text-sm text-gray-600">{dev.email}</div>
+                </div>
+              </label>
+            ))
+          )}
         </div>
 
         <div className="flex gap-3">
