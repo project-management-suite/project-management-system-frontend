@@ -31,22 +31,31 @@ export const ManagerDashboard = () => {
 
     try {
       const response = await apiClient.getProjects();
-      setProjects(response.projects || []);
+      const projects = response.projects || [];
+      setProjects(projects);
+      return projects;
     } catch (error) {
       console.error("Error fetching projects:", error);
+      return [];
     }
   };
 
-  const fetchStats = async () => {
+  const fetchStats = async (projectsData?: Project[]) => {
     if (!user) return;
 
     try {
-      const [projectsResponse, tasksResponse] = await Promise.all([
-        apiClient.getProjects(),
-        apiClient.getTasks(),
-      ]);
+      let projects: Project[] = [];
 
-      const projects = projectsResponse.projects || [];
+      // Only fetch projects if not provided
+      if (projectsData) {
+        projects = projectsData;
+      } else {
+        const response = await apiClient.getProjects();
+        projects = response.projects || [];
+        setProjects(projects); // Update projects state if we fetched them
+      }
+
+      const tasksResponse = await apiClient.getTasks();
       const tasks = tasksResponse.tasks || [];
 
       const completedTasks = tasks.filter(
@@ -76,7 +85,9 @@ export const ManagerDashboard = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchProjects(), fetchStats()]);
+      // Fetch projects first, then use that data for stats to avoid duplicate calls
+      const projectsData = await fetchProjects();
+      await fetchStats(projectsData);
       setLoading(false);
     };
 
@@ -97,7 +108,7 @@ export const ManagerDashboard = () => {
         project={selectedProject}
         onBack={() => setSelectedProject(null)}
         onTaskUpdate={() => {
-          fetchStats(); // Refresh dashboard stats when tasks are updated
+          fetchStats(projects); // Use existing projects data to avoid duplicate fetch
         }}
       />
     );
@@ -187,16 +198,19 @@ export const ManagerDashboard = () => {
       <ProjectList
         projects={projects}
         onSelectProject={setSelectedProject}
-        onRefresh={fetchProjects}
+        onRefresh={async () => {
+          const projectsData = await fetchProjects();
+          await fetchStats(projectsData);
+        }}
       />
 
       {showProjectForm && (
         <ProjectForm
           onClose={() => setShowProjectForm(false)}
-          onSuccess={() => {
+          onSuccess={async () => {
             setShowProjectForm(false);
-            fetchProjects();
-            fetchStats();
+            const projectsData = await fetchProjects();
+            await fetchStats(projectsData);
           }}
         />
       )}
