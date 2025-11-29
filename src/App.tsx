@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { Layout } from './components/layout/Layout';
-import { Login } from './components/auth/Login';
-import { Register } from './components/auth/Register';
-import { AdminDashboard } from './components/admin/AdminDashboard';
-import { ManagerDashboard } from './components/manager/ManagerDashboard';
-import { DeveloperDashboard } from './components/developer/DeveloperDashboard';
+import { useState } from "react";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { Layout } from "./components/layout/Layout";
+import { Login } from "./components/auth/Login";
+import { Register } from "./components/auth/Register";
+import { AdminDashboard } from "./components/admin/AdminDashboard";
+import { ManagerDashboard } from "./components/manager/ManagerDashboard";
+import { DeveloperDashboard } from "./components/developer/DeveloperDashboard";
 
 function AppContent() {
-  const { user, profile, loading } = useAuth();
+  const { user, loading } = useAuth();
   const [isLoginMode, setIsLoginMode] = useState(true);
 
   if (loading) {
@@ -19,7 +19,7 @@ function AppContent() {
     );
   }
 
-  if (!user || !profile) {
+  if (!user) {
     return isLoginMode ? (
       <Login onToggleMode={() => setIsLoginMode(false)} />
     ) : (
@@ -29,9 +29,9 @@ function AppContent() {
 
   return (
     <Layout>
-      {profile.role === 'ADMIN' && <AdminDashboard />}
-      {profile.role === 'MANAGER' && <ManagerDashboard />}
-      {profile.role === 'DEVELOPER' && <DeveloperDashboard />}
+      {user.role === "ADMIN" && <AdminDashboard />}
+      {user.role === "MANAGER" && <ManagerDashboard />}
+      {user.role === "DEVELOPER" && <DeveloperDashboard />}
     </Layout>
   );
 }

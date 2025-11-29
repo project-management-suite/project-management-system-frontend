@@ -1,15 +1,6 @@
-import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import { FolderOpen, Trash2, Edit2, Eye } from 'lucide-react';
-
-interface Project {
-  project_id: string;
-  project_name: string;
-  description: string | null;
-  owner_manager_id: string;
-  created_at: string;
-  updated_at: string;
-}
+import { useState } from "react";
+import { apiClient, Project } from "../../lib/api";
+import { FolderOpen, Trash2, Edit2, Eye } from "lucide-react";
 
 interface ProjectListProps {
   projects: Project[];
@@ -17,23 +8,30 @@ interface ProjectListProps {
   onRefresh: () => void;
 }
 
-export const ProjectList = ({ projects, onSelectProject, onRefresh }: ProjectListProps) => {
+export const ProjectList = ({
+  projects,
+  onSelectProject,
+  onRefresh,
+}: ProjectListProps) => {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
 
   const handleDelete = async (projectId: string) => {
-    if (!confirm('Are you sure you want to delete this project? This will also delete all tasks and files.')) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this project? This will also delete all tasks and files."
+      )
+    ) {
       return;
     }
 
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('project_id', projectId);
-
-    if (error) {
-      alert('Error deleting project: ' + error.message);
-    } else {
+    try {
+      await apiClient.deleteProject(projectId);
       onRefresh();
+    } catch (error) {
+      alert(
+        "Error deleting project: " +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
     }
   };
 
@@ -50,7 +48,9 @@ export const ProjectList = ({ projects, onSelectProject, onRefresh }: ProjectLis
         <div className="p-12 text-center">
           <FolderOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500 text-lg">No projects yet</p>
-          <p className="text-gray-400 text-sm">Create your first project to get started</p>
+          <p className="text-gray-400 text-sm">
+            Create your first project to get started
+          </p>
         </div>
       ) : (
         <div className="divide-y divide-gray-200">
@@ -65,7 +65,7 @@ export const ProjectList = ({ projects, onSelectProject, onRefresh }: ProjectLis
                     {project.project_name}
                   </h3>
                   <p className="text-gray-600 mb-3">
-                    {project.description || 'No description'}
+                    {project.description || "No description"}
                   </p>
                   <p className="text-sm text-gray-500">
                     Created {new Date(project.created_at).toLocaleDateString()}
@@ -121,31 +121,29 @@ interface EditProjectModalProps {
   onSuccess: () => void;
 }
 
-const EditProjectModal = ({ project, onClose, onSuccess }: EditProjectModalProps) => {
+const EditProjectModal = ({
+  project,
+  onClose,
+  onSuccess,
+}: EditProjectModalProps) => {
   const [name, setName] = useState(project.project_name);
-  const [description, setDescription] = useState(project.description || '');
+  const [description, setDescription] = useState(project.description || "");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const { error: updateError } = await supabase
-        .from('projects')
-        .update({
-          project_name: name,
-          description,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('project_id', project.project_id);
-
-      if (updateError) throw updateError;
+      await apiClient.updateProject(project.project_id, {
+        project_name: name,
+        description,
+      });
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update project');
+      setError(err instanceof Error ? err.message : "Failed to update project");
     } finally {
       setLoading(false);
     }
@@ -201,7 +199,7 @@ const EditProjectModal = ({ project, onClose, onSuccess }: EditProjectModalProps
               disabled={loading}
               className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
             >
-              {loading ? 'Updating...' : 'Update Project'}
+              {loading ? "Updating..." : "Update Project"}
             </button>
           </div>
         </form>

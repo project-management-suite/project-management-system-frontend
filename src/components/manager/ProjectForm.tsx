@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useState } from "react";
+import { apiClient } from "../../lib/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface ProjectFormProps {
   onClose: () => void;
@@ -9,31 +9,26 @@ interface ProjectFormProps {
 
 export const ProjectForm = ({ onClose, onSuccess }: ProjectFormProps) => {
   const { user } = useAuth();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
-      const { error: insertError } = await supabase
-        .from('projects')
-        .insert({
-          project_name: name,
-          description,
-          owner_manager_id: user.id,
-        });
-
-      if (insertError) throw insertError;
+      await apiClient.createProject({
+        project_name: name,
+        description,
+      });
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create project');
+      setError(err instanceof Error ? err.message : "Failed to create project");
     } finally {
       setLoading(false);
     }
@@ -42,7 +37,9 @@ export const ProjectForm = ({ onClose, onSuccess }: ProjectFormProps) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Create New Project</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+          Create New Project
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
@@ -91,7 +88,7 @@ export const ProjectForm = ({ onClose, onSuccess }: ProjectFormProps) => {
               disabled={loading}
               className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating...' : 'Create Project'}
+              {loading ? "Creating..." : "Create Project"}
             </button>
           </div>
         </form>
