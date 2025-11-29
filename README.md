@@ -92,35 +92,21 @@ Before you begin, ensure you have the following installed:
 
 3. **Set up environment variables**
 
-   **Quick Setup (Recommended):**
-   ```bash
-   # For local development:
-   ./setup-env.sh local
-   
-   # For production backend:
-   ./setup-env.sh production
-   
-   # Check current config:
-   ./setup-env.sh show
-   ```
-
-   **Manual Setup:**
-   ```bash
+   ````bash
    # Create environment file
    touch .env.local
 
-   # For local development (if running backend locally):
-   echo "VITE_API_URL=http://localhost:5000/api" >> .env.local
-   
-   # OR for production backend:
-   echo "VITE_API_URL=https://project-management-system-backend-8yt4co2oa.vercel.app/api" >> .env.local
+   # Add your configuration (replace with your actual Supabase anon key):
+   echo "VITE_API_URL=https://project-management-system-backend-mxy8b4tqc.vercel.app/api" >> .env.local
+   echo "VITE_SUPABASE_URL=https://desltpchhyehrfsedgen.supabase.co" >> .env.local
+   echo "VITE_SUPABASE_ANON_KEY=your_supabase_anon_key" >> .env.local
    ```4. **Start the development server**
 
    ```bash
    npm run dev
-   ```
+   ````
 
-5. **Open your browser**
+4. **Open your browser**
 
    Navigate to `http://localhost:5173` and start managing your projects! 🎉
 
@@ -277,26 +263,6 @@ graph TB
 
 ## 🔧 Development
 
-### 🌍 Environment Management
-
-This project includes an easy environment switcher to toggle between local and production backends:
-
-```bash
-# Switch to local development (backend at localhost:5000)
-./setup-env.sh local
-
-# Switch to production backend (deployed on Vercel)
-./setup-env.sh production
-
-# Check current environment configuration
-./setup-env.sh show
-```
-
-**Environment Variables:**
-- `VITE_API_URL`: Backend API endpoint
-- **Local**: `http://localhost:5000/api`
-- **Production**: `https://project-management-system-backend-8yt4co2oa.vercel.app/api`
-
 ### 📋 Available Scripts
 
 | Command             | Description                              |
@@ -416,11 +382,10 @@ npm run typecheck
 # Check current API URL being used
 # Look in browser console for: "🔗 API Base URL: ..."
 
-# For local development:
-VITE_API_URL=http://localhost:5000/api
-
-# For production:
-VITE_API_URL=https://project-management-system-backend-8yt4co2oa.vercel.app/api
+# Your .env.local should contain:
+VITE_API_URL=https://project-management-system-backend-mxy8b4tqc.vercel.app/api
+VITE_SUPABASE_URL=https://desltpchhyehrfsedgen.supabase.co
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 # Verify environment is loaded correctly:
 cat .env.local

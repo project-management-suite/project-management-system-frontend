@@ -17,7 +17,7 @@ The frontend uses the `VITE_API_URL` environment variable to determine which bac
    Set environment variable in Netlify:
 
    ```
-   VITE_API_URL=https://project-management-system-backend-8yt4co2oa.vercel.app/api
+   VITE_API_URL=https://project-management-system-backend-mxy8b4tqc.vercel.app/api
    ```
 
 3. **Staging Environment:**
@@ -32,4 +32,4 @@ If no `VITE_API_URL` is set, the app defaults to the production backend URL.
 ### Backend URLs:
 
 - **Local**: `http://localhost:5000/api`
-- **Production**: `https://project-management-system-backend-8yt4co2oa.vercel.app/api`
+- **Production**: `https://project-management-system-backend-mxy8b4tqc.vercel.app/api`

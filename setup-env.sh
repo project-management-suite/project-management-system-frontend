@@ -16,7 +16,7 @@ case "$1" in
   
   production)
     echo "🚀 Setting up PRODUCTION environment..."
-    echo "VITE_API_URL=https://project-management-system-backend-8yt4co2oa.vercel.app/api" > .env.local
+    echo "VITE_API_URL=https://project-management-system-backend-mxy8b4tqc.vercel.app/api" > .env.local
     echo "✅ Production environment configured"
     echo "📝 Using deployed backend: Vercel"
     ;;
