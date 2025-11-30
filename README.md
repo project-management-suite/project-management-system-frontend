@@ -37,9 +37,11 @@
 
 - **🔐 Multi-Role Authentication System**
 
-  - Secure JWT-based user registration and login
+  - Secure email-based OTP verification for registration
+  - JWT-based user authentication with email verification
   - Role-based access control (Admin/Manager/Developer)
-  - Profile management with secure authentication
+  - Professional HTML email templates for user verification
+  - Automatic login after successful email verification
 
 - **📊 Advanced Project Management**
 
@@ -278,9 +280,11 @@ graph TB
 This frontend connects to a Node.js REST API backend. Key API endpoints:
 
 ```typescript
-// Authentication
-POST /api/auth/login
-POST /api/auth/register
+// Authentication & OTP Verification
+POST /api/auth/register      // Send OTP to email
+POST /api/auth/verify-otp    // Verify OTP and complete registration
+POST /api/auth/resend-otp    // Resend OTP if needed
+POST /api/auth/login         // Login (requires verified email)
 
 // Projects
 GET    /api/projects
@@ -299,10 +303,41 @@ GET    /api/users
 PUT    /api/users/:id
 ```
 
-### 🔑 Authentication Flow
+### 🔑 Authentication & OTP Flow
 
 ```typescript
-// Login request
+// Step 1: Register user and send OTP
+const registerResponse = await fetch(`${API_URL}/auth/register`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    username: "john_doe",
+    email: "john@example.com",
+    password: "password123",
+    role: "DEVELOPER",
+  }),
+});
+// Response: { message: "OTP sent to your email...", tempUserId: "..." }
+
+// Step 2: User receives email with 6-digit OTP, then verifies
+const verifyResponse = await fetch(`${API_URL}/auth/verify-otp`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email: "john@example.com",
+    otp: "123456",
+  }),
+});
+// Response: { token: "jwt_token", user: {...}, message: "Email verified successfully" }
+
+// Step 3: User is now logged in automatically
+localStorage.setItem("token", token);
+```
+
+### 🔐 Login Flow
+
+```typescript
+// Login request (only for verified users)
 const response = await fetch(`${API_URL}/auth/login`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
