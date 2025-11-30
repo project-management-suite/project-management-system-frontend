@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "../../contexts/AuthContext";
 import { UserPlus } from "lucide-react";
+import { OTPVerification } from "./OTPVerification";
+import { apiClient } from "../../lib/api";
 
 type UserRole = "ADMIN" | "MANAGER" | "DEVELOPER";
 
@@ -16,7 +18,9 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const { signUp } = useAuth();
+  const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [registrationEmail, setRegistrationEmail] = useState("");
+  const { signUp, setUserFromOTP } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,14 +28,49 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
     setLoading(true);
 
     try {
-      await signUp(email, password, username, role);
-      setSuccess(true);
+      // Register user and send OTP
+      await apiClient.register({ username, email, password, role });
+      setRegistrationEmail(email);
+      setShowOTPVerification(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to sign up");
     } finally {
       setLoading(false);
     }
   };
+
+  const handleOTPVerify = async (otp: string) => {
+    const response = await apiClient.verifyOTP({
+      email: registrationEmail,
+      otp,
+    });
+
+    // Use the auth context function to properly set user state
+    setUserFromOTP(response.token, response.user);
+
+    // User is now logged in automatically - the app will redirect to dashboard
+    // No need to show success screen since they're logged in
+  };
+
+  const handleResendOTP = async () => {
+    await apiClient.resendOTP({ email: registrationEmail });
+  };
+
+  const handleBackToRegistration = () => {
+    setShowOTPVerification(false);
+    setRegistrationEmail("");
+  };
+
+  if (showOTPVerification) {
+    return (
+      <OTPVerification
+        email={registrationEmail}
+        onVerify={handleOTPVerify}
+        onResendOTP={handleResendOTP}
+        onBack={handleBackToRegistration}
+      />
+    );
+  }
 
   if (success) {
     return (
@@ -54,10 +93,10 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
               </svg>
             </div>
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Registration Successful!
+              Email Verified Successfully!
             </h2>
             <p className="text-gray-600 mb-6">
-              You can now sign in with your credentials.
+              Your account has been created and verified. You can now sign in.
             </p>
             <button
               onClick={onToggleMode}
@@ -84,7 +123,7 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
           Create Account
         </h2>
         <p className="text-center text-gray-600 mb-8">
-          Sign up for a new account
+          Enter your details to create an account
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">

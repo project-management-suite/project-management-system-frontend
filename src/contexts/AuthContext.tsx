@@ -19,6 +19,7 @@ interface AuthContextType {
     role: "ADMIN" | "MANAGER" | "DEVELOPER"
   ) => Promise<void>;
   signOut: () => void;
+  setUserFromOTP: (token: string, user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -76,16 +77,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     role: "ADMIN" | "MANAGER" | "DEVELOPER"
   ) => {
     try {
+      // Note: This method is now only used for the old flow
+      // New registration flow handles OTP verification in the Register component
       const response = await apiClient.register({
         username,
         email,
         password,
         role,
       });
-      setToken(response.token);
-      setUser(response.user);
-      apiClient.setToken(response.token);
-      localStorage.setItem("authUser", JSON.stringify(response.user));
+
+      // If registration returns a token (old flow), set user data
+      if ((response as any).token) {
+        const authResponse = response as any;
+        setToken(authResponse.token);
+        setUser(authResponse.user);
+        apiClient.setToken(authResponse.token);
+        localStorage.setItem("authUser", JSON.stringify(authResponse.user));
+      }
+
+      return response;
     } catch (error) {
       throw error;
     }
@@ -95,12 +105,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     setToken(null);
     apiClient.setToken(null);
+    localStorage.removeItem("authToken");
     localStorage.removeItem("authUser");
+  };
+
+  const setUserFromOTP = (authToken: string, userData: User) => {
+    setToken(authToken);
+    setUser(userData);
+    apiClient.setToken(authToken);
+    localStorage.setItem("authToken", authToken);
+    localStorage.setItem("authUser", JSON.stringify(userData));
   };
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, signIn, signUp, signOut }}
+      value={{ user, token, loading, signIn, signUp, signOut, setUserFromOTP }}
     >
       {children}
     </AuthContext.Provider>

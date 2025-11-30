@@ -93,8 +93,22 @@ class ApiClient {
     email: string;
     password: string;
     role: "ADMIN" | "MANAGER" | "DEVELOPER";
-  }): Promise<AuthResponse> {
+  }): Promise<{ message: string; tempUserId?: string }> {
     return this.request("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async verifyOTP(data: { email: string; otp: string }): Promise<AuthResponse> {
+    return this.request("/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async resendOTP(data: { email: string }): Promise<{ message: string }> {
+    return this.request("/auth/resend-otp", {
       method: "POST",
       body: JSON.stringify(data),
     });
