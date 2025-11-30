@@ -11,7 +11,7 @@
 
 **Enterprise-grade React frontend for comprehensive project management system with 109 backend API endpoints across 12 functional modules**
 
-[🌟 Live Demo](https://project-management-system-fsad.netlify.app) • [🔗 Backend API](https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app) • [📖 API Documentation](https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app/api/docs) • [🎨 Swagger UI](https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app/api/swagger)
+[🌟 Live Demo](https://project-management-system-fsad.netlify.app) • [🔗 Backend API](https://project-management-system-backend-service.vercel.app) • [📖 API Documentation](https://project-management-system-backend-service.vercel.app/api/docs) • [🎨 Swagger UI](https://project-management-system-backend-service.vercel.app/api/swagger)
 
 ---
 
@@ -169,7 +169,7 @@ Before you begin, ensure you have the following installed:
    touch .env.local
 
    # Add your configuration (replace with your actual Supabase anon key):
-   echo "VITE_API_URL=https://project-management-system-backend-mxy8b4tqc.vercel.app/api" >> .env.local
+   echo "VITE_API_URL=https://project-management-system-backend-service.vercel.app/api" >> .env.local
    echo "VITE_SUPABASE_URL=https://desltpchhyehrfsedgen.supabase.co" >> .env.local
    echo "VITE_SUPABASE_ANON_KEY=your_supabase_anon_key" >> .env.local
    ```4. **Start the development server**
@@ -506,7 +506,7 @@ We welcome contributions! Please follow these steps:
 
 ```bash
 # Check if backend API is running
-curl https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app/api/health
+curl https://project-management-system-backend-service.vercel.app/api/health
 
 # Verify API URL in environment
 echo $VITE_API_URL
@@ -541,7 +541,7 @@ npm run typecheck
 # Look in browser console for: "🔗 API Base URL: ..."
 
 # Your .env.local should contain:
-VITE_API_URL=https://project-management-system-backend-mxy8b4tqc.vercel.app/api
+VITE_API_URL=https://project-management-system-backend-service.vercel.app/api
 VITE_SUPABASE_URL=https://desltpchhyehrfsedgen.supabase.co
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
@@ -571,7 +571,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 **Need help? We're here for you!**
 
 [![GitHub Issues](https://img.shields.io/badge/GitHub-Issues-red?style=for-the-badge&logo=github)](https://github.com/divyanshjha30/Project-Management-System/issues)
-[![Backend API](https://img.shields.io/badge/Backend-API%20Docs-blue?style=for-the-badge&logo=swagger)](https://project-mngmt-backend-6egk5xxe4-divyansh-jhas-projects-5f01972a.vercel.app/api-docs)
+[![Backend API](https://img.shields.io/badge/Backend-API%20Docs-blue?style=for-the-badge&logo=swagger)](https://project-management-system-backend-service.vercel.app/api/docs)
 [![Email](https://img.shields.io/badge/Email-Support-blue?style=for-the-badge&logo=gmail)](mailto:your-email@example.com)
 
 </div>
