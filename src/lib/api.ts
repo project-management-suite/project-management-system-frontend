@@ -1,6 +1,6 @@
 // API client for our backend
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+  import.meta.env.VITE_API_URL || "https://project-management-system-backend-service.vercel.app/api";
 
 // Log the API URL being used (for debugging)
 console.log("🔗 API Base URL:", API_BASE_URL);
