@@ -9,8 +9,8 @@
 # Environment variables (these will be set in Netlify dashboard)
 [build.environment]
   NODE_VERSION = "20"
-  # API URL for backend (update this with your deployed backend URL)
-  VITE_API_URL = "http://localhost:5000/api"
+  # API URL for backend - Production Vercel URL
+  VITE_API_URL = "https://project-management-system-backend-service.vercel.app/api"
   # Disable secrets scanning for Supabase public keys (safe for frontend)
   SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_ANON_KEY,VITE_SUPABASE_URL"
 

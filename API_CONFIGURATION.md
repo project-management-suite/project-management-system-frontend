@@ -1,60 +1,34 @@
 # 🔧 API Configuration Guide
 
-## Current Configuration Status
+## ✅ Configuration Status - FIXED!
 
-### 🔧 Fixed Issues:
+### ✅ **Production Ready:**
 
-1. ✅ **Localhost Port**: Changed from port 3000 → 5000 in `src/lib/api.ts`
-2. ✅ **Node Version**: Updated netlify.toml to use Node 20
-3. ✅ **Environment Variable**: Added VITE_API_URL to netlify.toml
+- **Production API URL**: `https://project-management-system-backend-service.vercel.app/api`
+- **Netlify Build**: Configured to use Vercel backend
+- **Node Version**: Set to 20 for compatibility
 
-### ⚠️ Production Deployment Required
+### 🔧 **For Local Development:**
 
-**The frontend is currently configured to call `localhost:5000/api`, which will only work for local development.**
+If you want to develop locally with a local backend:
 
-## Next Steps for Production:
+1. Create `.env.local` file (won't be committed):
 
-### Option 1: Deploy Backend First (Recommended)
+   ```
+   VITE_API_URL=http://localhost:5000/api
+   ```
 
-1. Deploy your backend (project-management-system-backend) to a cloud service:
+2. Start your local backend on port 5000
 
-   - **Heroku**: Simple deployment with git
-   - **Railway**: Modern alternative to Heroku
-   - **Render**: Free tier available
-   - **Digital Ocean App Platform**: Easy deployment
-   - **AWS/GCP/Azure**: More complex but scalable
+### ✅ **Current Status:**
 
-2. Once deployed, update the API URL in Netlify:
-   - Go to your Netlify site dashboard
-   - Navigate to **Site settings > Environment variables**
-   - Update `VITE_API_URL` to your deployed backend URL:
-     ```
-     VITE_API_URL=https://your-backend-app.herokuapp.com/api
-     ```
+- ✅ **Production**: Will call Vercel backend
+- ✅ **Node Version**: Fixed to 20
+- ✅ **Package Conflicts**: Resolved
+- ✅ **API URL**: Fixed for production deployment
 
-### Option 2: Use ngrok for Quick Testing
+## Deployment Flow:
 
-For temporary testing, you can expose your local backend:
-
-```bash
-# Install ngrok
-npm install -g ngrok
-
-# Expose local backend (run this when your backend is running)
-ngrok http 5000
-
-# Copy the HTTPS URL (e.g., https://abc123.ngrok.io)
-# Update Netlify environment variable:
-# VITE_API_URL=https://abc123.ngrok.io/api
-```
-
-## Current Frontend Status:
-
-- ✅ Node version fixed (20)
-- ✅ Package conflicts resolved
-- ✅ Local API calls fixed (localhost:5000)
-- ⚠️ **Still needs backend deployment URL for production**
-
-## Backend Deployment Required:
-
-Your `project-management-system-backend` needs to be deployed to a cloud service. Once deployed, update the `VITE_API_URL` environment variable in Netlify with the production backend URL.
+1. **Local Development**: Uses `.env.local` if present, otherwise defaults to Vercel
+2. **Netlify Production**: Uses `netlify.toml` environment variable → Vercel backend
+3. **Backend**: Already deployed on Vercel
