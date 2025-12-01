@@ -74,8 +74,8 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
 
   if (success) {
     return (
-      <div className="min-h-screen app-light dark:app-dark flex items-center justify-center p-5">
-        <div className="glass rounded-2xl w-full max-w-md p-8">
+      <div className="min-h-screen bg-[var(--bg-dark)] flex items-center justify-center p-5">
+        <div className="neo-tile rounded-2xl w-full max-w-md p-8">
           <div className="text-center">
             <div className="neo-icon p-4 rounded-full inline-block mb-5">
               <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none">
@@ -88,10 +88,10 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold mb-2">
+            <h2 className="text-2xl font-bold mb-2 text-white">
               Email Verified Successfully!
             </h2>
-            <p className="opacity-70 mb-6">
+            <p className="text-gray-400 mb-6">
               Your account has been created and verified. You can now sign in.
             </p>
             <button
@@ -107,8 +107,8 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
   }
 
   return (
-    <div className="min-h-screen app-light dark:app-dark flex items-center justify-center p-5">
-      <div className="glass rounded-2xl w-full max-w-md p-8">
+    <div className="min-h-screen bg-[var(--bg-dark)] flex items-center justify-center p-5">
+      <div className="dark:glass rounded-2xl w-full max-w-md p-8">
         <div className="flex items-center justify-center mb-8">
           <div className="neo-icon p-3 rounded-lg">
             <UserPlus
@@ -118,16 +118,16 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
           </div>
         </div>
 
-        <h2 className="text-3xl font-bold text-center mb-2">
+        <h2 className="text-3xl font-bold text-center mb-2 text-white">
           Create Account
         </h2>
-        <p className="text-center opacity-70 mb-8">
+        <p className="text-center text-gray-400 mb-8">
           Enter your details to create an account
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="neo-tile border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="glass border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
@@ -135,7 +135,7 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
           <div>
             <label
               htmlFor="username"
-              className="block text-sm font-medium mb-2"
+              className="block text-sm font-medium mb-2 text-gray-300"
             >
               Username
             </label>
@@ -144,7 +144,7 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-black/10  bg-white  focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
+              className="input"
               required
             />
           </div>
@@ -152,7 +152,7 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium mb-2"
+              className="block text-sm font-medium mb-2 text-gray-300"
             >
               Email Address
             </label>
@@ -161,7 +161,7 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-black/10  bg-white  focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
+              className="input"
               required
             />
           </div>
@@ -169,7 +169,7 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium mb-2"
+              className="block text-sm font-medium mb-2 text-gray-300"
             >
               Password
             </label>
@@ -178,7 +178,7 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-black/10  bg-white  focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
+              className="input"
               required
               minLength={6}
             />
@@ -187,7 +187,7 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
           <div>
             <label
               htmlFor="role"
-              className="block text-sm font-medium mb-2"
+              className="block text-sm font-medium mb-2 text-gray-300"
             >
               Role
             </label>
@@ -195,7 +195,7 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
               id="role"
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
-              className="w-full px-4 py-2 rounded-lg border border-black/10  bg-white  focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent"
+              className="select"
             >
               <option value="DEVELOPER">Developer</option>
               <option value="MANAGER">Manager</option>
@@ -206,7 +206,7 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full border rounded-md  btn-primary justify-center py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full btn-primary justify-center py-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Creating account..." : "Sign Up"}
           </button>
@@ -215,10 +215,9 @@ export const Register = ({ onToggleMode }: RegisterProps) => {
         <div className="mt-6 text-center">
           <button
             onClick={onToggleMode}
-            className="nav-link font-medium"
-            style={{ color: "var(--brand)" }}
+            className="text-gray-400 hover:text-[var(--brand)] font-medium transition-colors"
           >
-            Already have an account? Sign in
+            Already have an account? <span style={{ color: "var(--brand)" }}>Sign in</span>
           </button>
         </div>
       </div>
