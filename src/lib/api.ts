@@ -1,6 +1,7 @@
 // API client for our backend
 const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "https://project-management-system-backend-service.vercel.app/api";
+  import.meta.env.VITE_API_URL ||
+  "https://project-management-system-backend-service.vercel.app/api";
 
 // Log the API URL being used (for debugging)
 console.log("🔗 API Base URL:", API_BASE_URL);
@@ -64,9 +65,9 @@ class ApiClient {
   }
 
   private async request(endpoint: string, options: RequestInit = {}) {
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
     if (this.token) {
