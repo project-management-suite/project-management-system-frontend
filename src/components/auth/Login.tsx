@@ -28,26 +28,26 @@ export const Login = ({ onToggleMode }: LoginProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-8">
+    <div className="min-h-screen dark app-dark flex items-center justify-center p-5">
+      <div className="glass rounded-2xl w-full max-w-md p-8">
         <div className="flex items-center justify-center mb-8">
-          <div className="bg-blue-600 p-3 rounded-lg">
-            <LogIn className="w-8 h-8 text-white" />
+          <div className="neo-icon p-3 rounded-lg">
+            <LogIn className="w-8 h-8" style={{ color: "var(--brand)" }} />
           </div>
         </div>
 
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-2">Welcome Back</h2>
-        <p className="text-center text-gray-600 mb-8">Sign in to your account</p>
+        <h2 className="text-3xl font-bold text-center mb-2">Welcome Back</h2>
+        <p className="text-center opacity-70 mb-8">Sign in to your account</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            <div className="bg-red-900/20 border border-red-800 text-red-300 px-4 py-3 rounded-lg">
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium mb-2">
               Email Address
             </label>
             <input
@@ -55,13 +55,14 @@ export const Login = ({ onToggleMode }: LoginProps) => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="input"
+              placeholder="you@example.com"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium mb-2">
               Password
             </label>
             <input
@@ -69,7 +70,8 @@ export const Login = ({ onToggleMode }: LoginProps) => {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="input"
+              placeholder="••••••••"
               required
             />
           </div>
@@ -77,7 +79,7 @@ export const Login = ({ onToggleMode }: LoginProps) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full btn-primary justify-center py-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
@@ -86,7 +88,8 @@ export const Login = ({ onToggleMode }: LoginProps) => {
         <div className="mt-6 text-center">
           <button
             onClick={onToggleMode}
-            className="text-blue-600 hover:text-blue-700 font-medium"
+            className="nav-link font-medium"
+            style={{ color: "var(--brand)" }}
           >
             Don't have an account? Sign up
           </button>
