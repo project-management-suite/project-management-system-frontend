@@ -11,7 +11,9 @@
 
 **Enterprise-grade React frontend for comprehensive project management system with 109 backend API endpoints across 12 functional modules**
 
-[🌟 Live Demo](https://project-management-system-fsad.netlify.app) • [🔗 Backend API](https://project-management-system-backend-service.vercel.app) • [📖 API Documentation](https://project-management-system-backend-service.vercel.app/api/docs) • [🎨 Swagger UI](https://project-management-system-backend-service.vercel.app/api/swagger)
+[Deployment Status]([![Netlify Status](https://api.netlify.com/api/v1/badges/18e0146c-18ea-47af-86ef-4d2f2a6a5c89/deploy-status)](https://app.netlify.com/projects/project-management-system-project/deploys))
+
+[🌟 Live Demo](https://project-management-system-project.netlify.app) • [🔗 Backend API](https://project-management-system-backend-service.vercel.app) • [📖 API Documentation](https://project-management-system-backend-service.vercel.app/api/docs) • [🎨 Swagger UI](https://project-management-system-backend-service.vercel.app/api/swagger)
 
 ---
 
