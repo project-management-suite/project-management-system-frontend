@@ -26,6 +26,7 @@ import { TaskEditModal } from "./TaskEditModal";
 import { TaskCommentsModal } from "./TaskCommentsModal";
 import { FileUploader } from "../files/FileUploader";
 import { FileLibrary } from "../files/FileLibrary";
+import { UserAvatar } from "../profile/UserAvatar";
 
 // Edit Project Modal Component
 const EditProjectModal = ({
@@ -328,6 +329,14 @@ const ProjectMemberManagement = ({ project }: { project: Project }) => {
                               <Check className="w-3 h-3 text-white" />
                             )}
                           </div>
+                          <UserAvatar
+                            userId={developer.user_id}
+                            username={developer.username}
+                            profilePhotoUrl={developer.profile_photo_url}
+                            size="md"
+                            showName={false}
+                            showPopover={true}
+                          />
                           <div>
                             <div className="font-medium">
                               {developer.username}
@@ -390,25 +399,35 @@ const ProjectMemberManagement = ({ project }: { project: Project }) => {
               <h4 className="font-medium mb-2">
                 Current Project Members ({currentMembers.length})
               </h4>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-3">
                 {currentMembers.map((member: any, index: number) => {
                   const memberData = member?.member || member;
                   const memberRole =
                     member?.role || member?.project_role || "MEMBER";
                   const memberName =
                     memberData?.username || memberData?.email || "Unknown";
+                  const memberId = memberData?.user_id || member?.user_id;
+                  const memberPhotoUrl = memberData?.profile_photo_url;
                   const memberKey =
                     member?.membership_id ||
                     member?.user_id ||
                     `member-${index}`;
 
                   return (
-                    <span
+                    <div
                       key={memberKey}
-                      className="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-sm"
+                      className="flex items-center gap-2 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-sm"
                     >
-                      {memberName} ({memberRole})
-                    </span>
+                      <UserAvatar
+                        userId={memberId}
+                        username={memberName}
+                        profilePhotoUrl={memberPhotoUrl}
+                        size="sm"
+                        showName={true}
+                        showPopover={true}
+                      />
+                      <span className="text-xs opacity-70">({memberRole})</span>
+                    </div>
                   );
                 })}
               </div>

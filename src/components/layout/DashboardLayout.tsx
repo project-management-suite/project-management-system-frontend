@@ -9,8 +9,9 @@ import {
   X,
   Share2,
   Calendar,
+  UserCircle,
 } from "lucide-react";
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import mainIco from "../../assets/icons/main-ico.svg";
 
@@ -26,11 +27,18 @@ interface NavItem {
 }
 
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Refresh user data on mount to ensure profile photo is loaded
+  useEffect(() => {
+    if (user && !user.profile_photo_url) {
+      refreshUser();
+    }
+  }, []);
 
   const handleSignOut = () => {
     try {
@@ -70,6 +78,12 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       icon: Share2,
       label: "File Sharing",
       path: "/file-sharing",
+      roles: ["ADMIN", "MANAGER", "DEVELOPER"],
+    },
+    {
+      icon: UserCircle,
+      label: "Profile",
+      path: "/profile",
       roles: ["ADMIN", "MANAGER", "DEVELOPER"],
     },
   ];
@@ -155,8 +169,16 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {isSidebarOpen ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg">
-                    <User className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                    {user?.profile_photo_url ? (
+                      <img
+                        src={user.profile_photo_url}
+                        alt={user.username}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-5 h-5 text-white" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
@@ -272,8 +294,16 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <div className="p-4 border-t border-white/10 flex-shrink-0">
               <div className="glass rounded-lg p-3 space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg">
-                    <User className="w-5 h-5" />
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                    {user?.profile_photo_url ? (
+                      <img
+                        src={user.profile_photo_url}
+                        alt={user.username}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <User className="w-5 h-5 text-white" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">

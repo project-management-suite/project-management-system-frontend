@@ -13,6 +13,7 @@ export interface User {
   email: string;
   role: "ADMIN" | "MANAGER" | "DEVELOPER";
   email_verified?: boolean;
+  profile_photo_url?: string;
 }
 
 export interface LoginResponse {
@@ -139,9 +140,13 @@ class ApiClient {
 
   private async request(endpoint: string, options: RequestInit = {}) {
     const headers: Record<string, string> = {
-      "Content-Type": "application/json",
       ...(options.headers as Record<string, string>),
     };
+
+    // Only set Content-Type for non-FormData requests
+    if (!(options.body instanceof FormData)) {
+      headers["Content-Type"] = "application/json";
+    }
 
     if (this.token) {
       headers.Authorization = `Bearer ${this.token}`;
@@ -490,7 +495,7 @@ class ApiClient {
   async post(endpoint: string, data: any) {
     return this.request(endpoint, {
       method: "POST",
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
     });
   }
 

@@ -12,6 +12,7 @@ import { ProjectManagement } from "./components/admin/ProjectManagement";
 import { TaskManagement } from "./components/admin/TaskManagement";
 import { FileSharingHub } from "./components/files/FileSharingHub";
 import { CalendarView } from "./components/calendar/Calendar";
+import { Profile } from "./components/profile/Profile";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 function AppContent() {
@@ -144,6 +145,16 @@ function AppContent() {
         element={
           <DashboardLayout>
             <CalendarView />
+          </DashboardLayout>
+        }
+      />
+
+      {/* Profile Route - Available to all authenticated users */}
+      <Route
+        path="/profile"
+        element={
+          <DashboardLayout>
+            <Profile />
           </DashboardLayout>
         }
       />

@@ -20,6 +20,7 @@ interface AuthContextType {
   ) => Promise<void>;
   signOut: () => void;
   setUserFromOTP: (token: string, user: User) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -118,9 +119,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("user", JSON.stringify(userData));
   };
 
+  const refreshUser = async () => {
+    try {
+      if (!token) return;
+      const response = await apiClient.get("/profile");
+      if (response.profile) {
+        const updatedUser = {
+          user_id: response.profile.user_id,
+          id: response.profile.user_id,
+          username: response.profile.username,
+          email: response.profile.email,
+          role: response.profile.role,
+          email_verified: response.profile.email_verified,
+          profile_photo_url: response.profile.profile_photo_url,
+        };
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      console.error("Error refreshing user:", error);
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, signIn, signUp, signOut, setUserFromOTP }}
+      value={{
+        user,
+        token,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+        setUserFromOTP,
+        refreshUser,
+      }}
     >
       {children}
     </AuthContext.Provider>
