@@ -85,17 +85,11 @@ export const FileSharing = ({
 
   const fetchUsers = async () => {
     try {
-      const result = await apiClient.getUsers();
+      const result = await apiClient.getUsersForSharing();
       setUsers(result.users || []);
     } catch (error) {
-      console.error("Error fetching users:", error);
-      // Try fallback to developers endpoint
-      try {
-        const devResult = await apiClient.getUsersByRole("DEVELOPER");
-        setUsers(devResult.users || []);
-      } catch (devError) {
-        console.error("Error fetching developers:", devError);
-      }
+      console.error("Error fetching users for sharing:", error);
+      setError("Failed to load users for sharing");
     } finally {
       setLoading(false);
     }
@@ -109,6 +103,8 @@ export const FileSharing = ({
       return;
     }
 
+    if (sharing) return; // Prevent duplicate calls
+
     setSharing(true);
     setError(null);
 
@@ -120,16 +116,30 @@ export const FileSharing = ({
         setFormData({ userId: "", teamId: "" });
         setShowAddForm(false);
         onShareUpdate?.();
+
+        // Show success message for existing shares
+        if ((result as any).isExisting) {
+          setError("File is already shared with this user");
+        }
       }
     } catch (error) {
       console.error("Error sharing file:", error);
-      setError(error instanceof Error ? error.message : "Failed to share file");
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to share file";
+      setError(errorMessage);
+
+      // Special handling for duplicate share error
+      if (errorMessage.includes("already shared")) {
+        setError("This file is already shared with the selected user");
+      }
     } finally {
       setSharing(false);
     }
   };
 
   const handleShareWithTeam = async (projectId?: string) => {
+    if (sharing) return; // Prevent duplicate calls
+
     setSharing(true);
     setError(null);
 
@@ -145,9 +155,14 @@ export const FileSharing = ({
       }
     } catch (error) {
       console.error("Error sharing with team:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to share with team"
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to share with team";
+      setError(errorMessage);
+
+      // Special handling for partial success in team sharing
+      if (errorMessage.includes("already shared")) {
+        setError("Some team members may already have access to this file");
+      }
     } finally {
       setSharing(false);
     }

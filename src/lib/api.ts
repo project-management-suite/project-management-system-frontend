@@ -406,6 +406,11 @@ class ApiClient {
     return this.request(endpoint);
   }
 
+  // File sharing accessible to all users
+  async getUsersForSharing(): Promise<{ users: User[] }> {
+    return this.request("/projects/users");
+  }
+
   async getAllTeams(): Promise<{
     teams: Array<
       Project & {
