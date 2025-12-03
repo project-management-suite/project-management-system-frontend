@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Project, User, apiClient } from "../../lib/api";
-import { X, Calendar, FileText, Type, Users } from "lucide-react";
+import { X, Calendar, FileText, Type, Users, Upload } from "lucide-react";
+import { FileUploader } from "../files/FileUploader";
 
 interface TaskFormProps {
   project: Project;
@@ -12,6 +13,8 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
   const [loading, setLoading] = useState(false);
   const [developers, setDevelopers] = useState<User[]>([]);
   const [loadingDevelopers, setLoadingDevelopers] = useState(false);
+  const [showFileUpload, setShowFileUpload] = useState(false);
+  const [createdTaskId, setCreatedTaskId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -50,6 +53,8 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
         end_date: formData.end_date || undefined,
       });
 
+      setCreatedTaskId(task.task_id);
+
       // Assign developer if selected
       if (formData.assigned_developer) {
         try {
@@ -63,7 +68,9 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
         }
       }
 
-      onSuccess();
+      if (!showFileUpload) {
+        onSuccess();
+      }
     } catch (error) {
       console.error("Error creating task:", error);
       alert("Failed to create task. Please try again.");
@@ -87,9 +94,7 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
     <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="neo-tile w-full max-w-md">
         <div className="flex items-center justify-between p-6 border-b border-gray-800">
-          <h2 className="text-xl font-semibold text-white">
-            Create New Task
-          </h2>
+          <h2 className="text-xl font-semibold text-white">Create New Task</h2>
           <button
             onClick={onClose}
             className="neo-icon hover:bg-gray-800 transition-all"
@@ -101,7 +106,8 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="glass p-3 border border-brand/30">
             <p className="text-sm text-gray-300">
-              <strong className="text-brand">Project:</strong> {project.project_name}
+              <strong className="text-brand">Project:</strong>{" "}
+              {project.project_name}
             </p>
           </div>
 
@@ -198,6 +204,29 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
             </div>
           </div>
 
+          {/* File Upload Option */}
+          <div className="glass p-4 border border-gray-700 rounded-lg">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-2">
+              <Upload className="w-4 h-4 text-brand" />
+              File Attachments
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="include-files"
+                checked={showFileUpload}
+                onChange={(e) => setShowFileUpload(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-brand focus:ring-brand focus:ring-offset-0"
+              />
+              <label htmlFor="include-files" className="text-sm text-gray-300">
+                Enable file upload after creating task
+              </label>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              You can upload files related to this task after creation
+            </p>
+          </div>
+
           <div className="flex items-center gap-3 pt-4">
             <button
               type="submit"
@@ -215,6 +244,32 @@ export const TaskForm = ({ project, onClose, onSuccess }: TaskFormProps) => {
             </button>
           </div>
         </form>
+
+        {/* File Upload Section (shown after task creation) */}
+        {createdTaskId && showFileUpload && (
+          <div className="p-6 border-t border-gray-800">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Upload className="w-5 h-5 text-brand" />
+              Upload Task Files
+            </h3>
+            <FileUploader
+              projectId={project.project_id}
+              taskId={createdTaskId}
+              onUploadSuccess={() => {
+                // Files uploaded successfully, close the modal
+                onSuccess();
+              }}
+              onUploadError={(error) => {
+                alert(error);
+              }}
+            />
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => onSuccess()} className="btn-ghost flex-1">
+                Skip File Upload
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

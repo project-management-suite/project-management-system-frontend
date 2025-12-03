@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Project, Task, apiClient } from "../../lib/api";
+import { Project, Task, apiClient, File } from "../../lib/api";
 import {
   ArrowLeft,
   Plus,
@@ -12,10 +12,15 @@ import {
   LayoutGrid,
   ChevronLeft,
   ChevronRight,
+  FolderOpen,
+  Upload,
 } from "lucide-react";
 import { TaskForm } from "./TaskForm";
+import { FileUploader } from "../files/FileUploader";
+import { FileLibrary } from "../files/FileLibrary";
+import { FileSharing } from "../files/FileSharing";
 
-type ViewType = "list" | "board" | "calendar";
+type ViewType = "list" | "board" | "calendar" | "files";
 
 interface TaskManagerProps {
   project: Project;
@@ -34,6 +39,8 @@ export const TaskManager = ({
   const [currentView, setCurrentView] = useState<ViewType>("board");
   const [currentDate, setCurrentDate] = useState(new Date());
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showFileSharing, setShowFileSharing] = useState(false);
 
   const fetchTasks = async () => {
     try {
@@ -55,7 +62,9 @@ export const TaskManager = ({
   const getStatusIcon = (status: Task["status"]) => {
     switch (status) {
       case "NEW":
-        return <AlertCircle className="w-5 h-5" style={{ color: "var(--brand)" }} />;
+        return (
+          <AlertCircle className="w-5 h-5" style={{ color: "var(--brand)" }} />
+        );
       case "ASSIGNED":
         return <User className="w-5 h-5 text-yellow-400" />;
       case "IN_PROGRESS":
@@ -95,11 +104,11 @@ export const TaskManager = ({
 
     try {
       await apiClient.updateTask(draggedTask.task_id, { status: newStatus });
-      setTasks(tasks.map(t => 
-        t.task_id === draggedTask.task_id 
-          ? { ...t, status: newStatus } 
-          : t
-      ));
+      setTasks(
+        tasks.map((t) =>
+          t.task_id === draggedTask.task_id ? { ...t, status: newStatus } : t
+        )
+      );
       setDraggedTask(null);
       onTaskUpdate?.();
     } catch (error) {
@@ -119,21 +128,23 @@ export const TaskManager = ({
   };
 
   const getTasksForDate = (date: string) => {
-    return tasks.filter(task => {
+    return tasks.filter((task) => {
       if (!task.end_date) return false;
-      const taskDate = new Date(task.end_date).toISOString().split('T')[0];
+      const taskDate = new Date(task.end_date).toISOString().split("T")[0];
       return taskDate === date;
     });
   };
 
   const formatDate = (year: number, month: number, day: number) => {
-    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return `${year}-${String(month + 1).padStart(2, "0")}-${String(
+      day
+    ).padStart(2, "0")}`;
   };
 
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    setCurrentDate(prev => {
+  const navigateMonth = (direction: "prev" | "next") => {
+    setCurrentDate((prev) => {
       const newDate = new Date(prev);
-      if (direction === 'prev') {
+      if (direction === "prev") {
         newDate.setMonth(newDate.getMonth() - 1);
       } else {
         newDate.setMonth(newDate.getMonth() + 1);
@@ -144,17 +155,33 @@ export const TaskManager = ({
 
   const renderBoardView = () => {
     const columns = [
-      { id: "NEW" as const, name: "To Do", tasks: tasks.filter(t => t.status === "NEW") },
-      { id: "ASSIGNED" as const, name: "Assigned", tasks: tasks.filter(t => t.status === "ASSIGNED") },
-      { id: "IN_PROGRESS" as const, name: "In Progress", tasks: tasks.filter(t => t.status === "IN_PROGRESS") },
-      { id: "COMPLETED" as const, name: "Done", tasks: tasks.filter(t => t.status === "COMPLETED") },
+      {
+        id: "NEW" as const,
+        name: "To Do",
+        tasks: tasks.filter((t) => t.status === "NEW"),
+      },
+      {
+        id: "ASSIGNED" as const,
+        name: "Assigned",
+        tasks: tasks.filter((t) => t.status === "ASSIGNED"),
+      },
+      {
+        id: "IN_PROGRESS" as const,
+        name: "In Progress",
+        tasks: tasks.filter((t) => t.status === "IN_PROGRESS"),
+      },
+      {
+        id: "COMPLETED" as const,
+        name: "Done",
+        tasks: tasks.filter((t) => t.status === "COMPLETED"),
+      },
     ];
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {columns.map(column => (
-          <div 
-            key={column.id} 
+        {columns.map((column) => (
+          <div
+            key={column.id}
             className="glass rounded-xl p-4"
             onDragOver={handleDragOver}
             onDrop={() => handleDrop(column.id)}
@@ -166,7 +193,7 @@ export const TaskManager = ({
               </span>
             </div>
             <div className="space-y-3 min-h-[200px]">
-              {column.tasks.map(task => (
+              {column.tasks.map((task) => (
                 <div
                   key={task.task_id}
                   draggable
@@ -186,15 +213,18 @@ export const TaskManager = ({
                     {task.end_date && (
                       <div className="flex items-center gap-1">
                         <CalendarIcon className="w-3 h-3" />
-                        <span>{new Date(task.end_date).toLocaleDateString()}</span>
+                        <span>
+                          {new Date(task.end_date).toLocaleDateString()}
+                        </span>
                       </div>
                     )}
-                    {task.assigned_developers && task.assigned_developers.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        <span>{task.assigned_developers.length}</span>
-                      </div>
-                    )}
+                    {task.assigned_developers &&
+                      task.assigned_developers.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          <span>{task.assigned_developers.length}</span>
+                        </div>
+                      )}
                   </div>
                 </div>
               ))}
@@ -216,14 +246,22 @@ export const TaskManager = ({
         <table className="w-full">
           <thead>
             <tr className="border-b border-white/5">
-              <th className="text-left py-3 px-4 text-sm font-medium opacity-70">Task</th>
-              <th className="text-left py-3 px-4 text-sm font-medium opacity-70">Status</th>
-              <th className="text-left py-3 px-4 text-sm font-medium opacity-70">Assigned</th>
-              <th className="text-left py-3 px-4 text-sm font-medium opacity-70">Due Date</th>
+              <th className="text-left py-3 px-4 text-sm font-medium opacity-70">
+                Task
+              </th>
+              <th className="text-left py-3 px-4 text-sm font-medium opacity-70">
+                Status
+              </th>
+              <th className="text-left py-3 px-4 text-sm font-medium opacity-70">
+                Assigned
+              </th>
+              <th className="text-left py-3 px-4 text-sm font-medium opacity-70">
+                Due Date
+              </th>
             </tr>
           </thead>
           <tbody>
-            {tasks.map(task => (
+            {tasks.map((task) => (
               <tr
                 key={task.task_id}
                 className="border-t border-white/5 hover:bg-white/5 transition-colors group"
@@ -239,15 +277,23 @@ export const TaskManager = ({
                   </div>
                 </td>
                 <td className="py-3 px-4">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                      task.status
+                    )}`}
+                  >
                     {task.status.replace("_", " ")}
                   </span>
                 </td>
                 <td className="py-3 px-4">
-                  {task.assigned_developers && task.assigned_developers.length > 0 ? (
+                  {task.assigned_developers &&
+                  task.assigned_developers.length > 0 ? (
                     <div className="flex items-center gap-1 text-sm opacity-70">
                       <User className="w-4 h-4" />
-                      <span>{task.assigned_developers.length} developer{task.assigned_developers.length > 1 ? 's' : ''}</span>
+                      <span>
+                        {task.assigned_developers.length} developer
+                        {task.assigned_developers.length > 1 ? "s" : ""}
+                      </span>
                     </div>
                   ) : (
                     <span className="text-xs opacity-50">Unassigned</span>
@@ -257,7 +303,9 @@ export const TaskManager = ({
                   {task.end_date ? (
                     <div className="flex items-center gap-1 text-sm opacity-70">
                       <CalendarIcon className="w-4 h-4" />
-                      <span>{new Date(task.end_date).toLocaleDateString()}</span>
+                      <span>
+                        {new Date(task.end_date).toLocaleDateString()}
+                      </span>
                     </div>
                   ) : (
                     <span className="text-xs opacity-50">No due date</span>
@@ -273,7 +321,9 @@ export const TaskManager = ({
               <CalendarIcon className="w-8 h-8 opacity-30" />
             </div>
             <p className="opacity-70">No tasks yet</p>
-            <p className="text-sm opacity-50 mt-1">Create your first task to get started</p>
+            <p className="text-sm opacity-50 mt-1">
+              Create your first task to get started
+            </p>
           </div>
         )}
       </div>
@@ -281,40 +331,55 @@ export const TaskManager = ({
   };
 
   const renderCalendarView = () => {
-    const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(currentDate);
-    const monthName = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+    const { daysInMonth, startingDayOfWeek, year, month } =
+      getDaysInMonth(currentDate);
+    const monthName = currentDate.toLocaleString("default", {
+      month: "long",
+      year: "numeric",
+    });
 
     const days = [];
     for (let i = 0; i < startingDayOfWeek; i++) {
       days.push(
-        <div key={`empty-${i}`} className="min-h-[120px] bg-[var(--tile-dark)] border border-white/5 rounded-lg"></div>
+        <div
+          key={`empty-${i}`}
+          className="min-h-[120px] bg-[var(--tile-dark)] border border-white/5 rounded-lg"
+        ></div>
       );
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = formatDate(year, month, day);
       const tasksForDay = getTasksForDate(dateStr);
-      const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
+      const isToday =
+        new Date().toDateString() === new Date(year, month, day).toDateString();
 
       days.push(
         <div
           key={day}
           className={`min-h-[120px] bg-[var(--tile-dark)] border border-white/5 rounded-lg p-2 hover:bg-white/5 transition-colors ${
-            isToday ? 'ring-2 ring-[var(--brand)]' : ''
+            isToday ? "ring-2 ring-[var(--brand)]" : ""
           }`}
         >
-          <div className={`text-sm font-medium mb-2 ${isToday ? 'text-[var(--brand)]' : 'opacity-70'}`}>
+          <div
+            className={`text-sm font-medium mb-2 ${
+              isToday ? "text-[var(--brand)]" : "opacity-70"
+            }`}
+          >
             {day}
           </div>
           <div className="space-y-1">
-            {tasksForDay.map(task => (
+            {tasksForDay.map((task) => (
               <div
                 key={task.task_id}
                 className={`text-xs p-1.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity ${
-                  task.status === 'COMPLETED' ? 'bg-green-500/20 text-green-400' :
-                  task.status === 'IN_PROGRESS' ? 'bg-blue-500/20 text-blue-400' :
-                  task.status === 'ASSIGNED' ? 'bg-yellow-500/20 text-yellow-400' :
-                  'bg-[var(--brand)]/20 text-[var(--brand)]'
+                  task.status === "COMPLETED"
+                    ? "bg-green-500/20 text-green-400"
+                    : task.status === "IN_PROGRESS"
+                    ? "bg-blue-500/20 text-blue-400"
+                    : task.status === "ASSIGNED"
+                    ? "bg-yellow-500/20 text-yellow-400"
+                    : "bg-[var(--brand)]/20 text-[var(--brand)]"
                 }`}
                 title={task.title}
               >
@@ -332,7 +397,7 @@ export const TaskManager = ({
           <h2 className="text-2xl font-bold">{monthName}</h2>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigateMonth('prev')}
+              onClick={() => navigateMonth("prev")}
               className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/10"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -344,7 +409,7 @@ export const TaskManager = ({
               Today
             </button>
             <button
-              onClick={() => navigateMonth('next')}
+              onClick={() => navigateMonth("next")}
               className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/10"
             >
               <ChevronRight className="w-5 h-5" />
@@ -353,12 +418,57 @@ export const TaskManager = ({
         </div>
 
         <div className="grid grid-cols-7 gap-2">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <div key={day} className="p-3 text-center text-sm font-semibold opacity-70">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <div
+              key={day}
+              className="p-3 text-center text-sm font-semibold opacity-70"
+            >
               {day}
             </div>
           ))}
           {days}
+        </div>
+      </div>
+    );
+  };
+
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file);
+  };
+
+  const handleShareFile = (file: File) => {
+    setSelectedFile(file);
+    setShowFileSharing(true);
+  };
+
+  const handleFileUploadSuccess = () => {
+    // Refresh file library by re-rendering
+    if (currentView === "files") {
+      // The FileLibrary component will automatically refresh
+    }
+  };
+
+  const renderFilesView = () => {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* File Upload */}
+          <div className="lg:col-span-1">
+            <FileUploader
+              projectId={project.project_id}
+              onUploadSuccess={handleFileUploadSuccess}
+              onUploadError={(error) => alert(error)}
+            />
+          </div>
+
+          {/* File Library */}
+          <div className="lg:col-span-2">
+            <FileLibrary
+              projectId={project.project_id}
+              onFileSelect={handleFileSelect}
+              onShareClick={handleShareFile}
+            />
+          </div>
         </div>
       </div>
     );
@@ -383,31 +493,40 @@ export const TaskManager = ({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setCurrentView('list')}
+              onClick={() => setCurrentView("list")}
               className={`neo-icon w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
-                currentView === 'list' ? 'bg-white/10' : 'hover:bg-white/5'
+                currentView === "list" ? "bg-white/10" : "hover:bg-white/5"
               }`}
               title="List View"
             >
               <List className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setCurrentView('board')}
+              onClick={() => setCurrentView("board")}
               className={`neo-icon w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
-                currentView === 'board' ? 'bg-white/10' : 'hover:bg-white/5'
+                currentView === "board" ? "bg-white/10" : "hover:bg-white/5"
               }`}
               title="Board View"
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setCurrentView('calendar')}
+              onClick={() => setCurrentView("calendar")}
               className={`neo-icon w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
-                currentView === 'calendar' ? 'bg-white/10' : 'hover:bg-white/5'
+                currentView === "calendar" ? "bg-white/10" : "hover:bg-white/5"
               }`}
               title="Calendar View"
             >
               <CalendarIcon className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setCurrentView("files")}
+              className={`neo-icon w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
+                currentView === "files" ? "bg-white/10" : "hover:bg-white/5"
+              }`}
+              title="Files View"
+            >
+              <FolderOpen className="w-4 h-4" />
             </button>
             <button
               onClick={() => setShowTaskForm(true)}
@@ -434,9 +553,10 @@ export const TaskManager = ({
         </div>
       ) : (
         <>
-          {currentView === 'list' && renderListView()}
-          {currentView === 'board' && renderBoardView()}
-          {currentView === 'calendar' && renderCalendarView()}
+          {currentView === "list" && renderListView()}
+          {currentView === "board" && renderBoardView()}
+          {currentView === "calendar" && renderCalendarView()}
+          {currentView === "files" && renderFilesView()}
         </>
       )}
 
@@ -448,6 +568,20 @@ export const TaskManager = ({
             setShowTaskForm(false);
             fetchTasks();
             onTaskUpdate?.();
+          }}
+        />
+      )}
+
+      {/* File Detail/Sharing Modals */}
+      {selectedFile && showFileSharing && (
+        <FileSharing
+          file={selectedFile}
+          onClose={() => {
+            setSelectedFile(null);
+            setShowFileSharing(false);
+          }}
+          onShareUpdate={() => {
+            // Could refresh file library here if needed
           }}
         />
       )}

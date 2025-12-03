@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { apiClient, Project } from "../../lib/api";
-import { FolderOpen, Trash2, Edit2, Eye, Calendar } from "lucide-react";
+import {
+  FolderOpen,
+  Trash2,
+  Edit2,
+  Eye,
+  Calendar,
+  UserPlus,
+} from "lucide-react";
+import { ProjectMemberAssignment } from "./ProjectMemberAssignment";
 
 interface ProjectListProps {
   projects: Project[];
@@ -14,6 +22,9 @@ export const ProjectList = ({
   onRefresh,
 }: ProjectListProps) => {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [assigningProject, setAssigningProject] = useState<Project | null>(
+    null
+  );
 
   const handleDelete = async (projectId: string) => {
     if (
@@ -62,7 +73,10 @@ export const ProjectList = ({
               className="p-6 hover:bg-white/5 transition-all group"
             >
               <div className="flex items-start justify-between">
-                <div className="flex-1 cursor-pointer" onClick={() => onSelectProject(project)}>
+                <div
+                  className="flex-1 cursor-pointer"
+                  onClick={() => onSelectProject(project)}
+                >
                   <h3 className="text-lg font-semibold mb-2 group-hover:text-[var(--brand)] transition-colors">
                     {project.project_name}
                   </h3>
@@ -72,7 +86,10 @@ export const ProjectList = ({
                   <div className="flex items-center gap-4 text-xs opacity-60">
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      <span>Created {new Date(project.created_at).toLocaleDateString()}</span>
+                      <span>
+                        Created{" "}
+                        {new Date(project.created_at).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -84,6 +101,13 @@ export const ProjectList = ({
                     title="View tasks"
                   >
                     <Eye className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setAssigningProject(project)}
+                    className="neo-icon w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10"
+                    title="Assign developers"
+                  >
+                    <UserPlus className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setEditingProject(project)}
@@ -112,6 +136,18 @@ export const ProjectList = ({
           onClose={() => setEditingProject(null)}
           onSuccess={() => {
             setEditingProject(null);
+            onRefresh();
+          }}
+        />
+      )}
+
+      {assigningProject && (
+        <ProjectMemberAssignment
+          projectId={assigningProject.project_id}
+          projectName={assigningProject.project_name}
+          onClose={() => setAssigningProject(null)}
+          onSuccess={() => {
+            setAssigningProject(null);
             onRefresh();
           }}
         />

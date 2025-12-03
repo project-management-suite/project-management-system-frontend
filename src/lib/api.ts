@@ -47,6 +47,56 @@ export interface Task {
   assigned_developers?: any[];
 }
 
+export interface File {
+  file_id: string;
+  project_id: string;
+  task_id?: string;
+  uploaded_by_user_id: string;
+  file_name: string;
+  original_name: string;
+  file_path_in_storage: string;
+  file_size: number;
+  mime_type: string;
+  upload_date: string;
+  download_url?: string;
+  project?: {
+    project_id: string;
+    project_name: string;
+  };
+  task?: {
+    task_id: string;
+    title: string;
+  };
+  uploaded_by?: {
+    username: string;
+    email: string;
+  };
+}
+
+export interface FileShare {
+  share_id: string;
+  file_id: string;
+  shared_with_user_id: string;
+  shared_by_user_id: string;
+  permission_level: "read" | "write" | "admin";
+  shared_at: string;
+  file?: File;
+  shared_with?: {
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    username: string;
+  };
+  shared_by?: {
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    username: string;
+  };
+}
+
 class ApiClient {
   private token: string | null = null;
 
@@ -77,6 +127,29 @@ class ApiClient {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       headers,
+    });
+
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ message: "Request failed" }));
+      throw new Error(error.message || "Request failed");
+    }
+
+    return response.json();
+  }
+
+  private async requestFormData(endpoint: string, formData: FormData) {
+    const headers: Record<string, string> = {};
+
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "POST",
+      headers,
+      body: formData,
     });
 
     if (!response.ok) {
@@ -161,6 +234,56 @@ class ApiClient {
   async deleteProject(projectId: string): Promise<{ message: string }> {
     return this.request(`/projects/${projectId}`, {
       method: "DELETE",
+    });
+  }
+
+  // Project member management endpoints
+  async assignProjectMembers(
+    projectId: string,
+    memberIds: string[],
+    role: "MEMBER" | "LEAD" = "MEMBER"
+  ): Promise<{ message: string; members: any[]; project_id: string }> {
+    return this.request(`/projects/${projectId}/assign`, {
+      method: "POST",
+      body: JSON.stringify({ memberIds, role }),
+    });
+  }
+
+  async getProjectMembers(projectId: string): Promise<{
+    project_id: string;
+    members: Array<{
+      membership_id: string;
+      member_id: string;
+      role: string;
+      joined_at: string;
+      member: {
+        user_id: string;
+        username: string;
+        email: string;
+        role: string;
+      };
+    }>;
+  }> {
+    return this.request(`/projects/${projectId}/members`);
+  }
+
+  async removeProjectMember(
+    projectId: string,
+    memberId: string
+  ): Promise<{ message: string; project_id: string; member_id: string }> {
+    return this.request(`/projects/${projectId}/members/${memberId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async updateProjectMemberRole(
+    projectId: string,
+    memberId: string,
+    role: "MEMBER" | "LEAD"
+  ): Promise<{ message: string; member: any }> {
+    return this.request(`/projects/${projectId}/members/${memberId}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
     });
   }
 
@@ -258,6 +381,200 @@ class ApiClient {
       method: "PUT",
       body: JSON.stringify(data),
     });
+  }
+
+  // File Management endpoints
+  async uploadFiles(
+    projectId: string,
+    files: FileList,
+    taskId?: string
+  ): Promise<{ success: boolean; files: File[] }> {
+    const formData = new FormData();
+
+    Array.from(files).forEach((file) => {
+      formData.append("files", file);
+    });
+
+    if (taskId) {
+      formData.append("task_id", taskId);
+    }
+
+    return this.requestFormData(`/files/project/${projectId}/upload`, formData);
+  }
+
+  async getProjectFiles(
+    projectId: string
+  ): Promise<{ success: boolean; files: File[] }> {
+    return this.request(`/files/project/${projectId}`);
+  }
+
+  async getTaskFiles(
+    taskId: string
+  ): Promise<{ success: boolean; files: File[] }> {
+    return this.request(`/files/task/${taskId}`);
+  }
+
+  async getFileMetadata(
+    fileId: string
+  ): Promise<{ success: boolean; file: File }> {
+    return this.request(`/files/${fileId}`);
+  }
+
+  async deleteFile(
+    fileId: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request(`/files/${fileId}`, { method: "DELETE" });
+  }
+
+  async getFileStatistics(projectId: string): Promise<{
+    success: boolean;
+    stats: {
+      total_files: number;
+      total_size: string;
+      files_by_type: Record<string, number>;
+    };
+  }> {
+    return this.request(`/files/project/${projectId}/stats`);
+  }
+
+  // File Sharing endpoints
+  async shareFile(
+    fileId: string,
+    sharedWithUserId: string,
+    permissionLevel: "read" | "write" | "admin" = "read"
+  ): Promise<{ success: boolean; share: FileShare }> {
+    return this.request("/file-shares", {
+      method: "POST",
+      body: JSON.stringify({
+        file_id: fileId,
+        shared_with_user_id: sharedWithUserId,
+        permission_level: permissionLevel,
+      }),
+    });
+  }
+
+  async shareBulkFiles(
+    fileIds: string[],
+    userIds: string[],
+    permissionLevel: "read" | "write" | "admin" = "read"
+  ): Promise<{ success: boolean; shares: FileShare[] }> {
+    return this.request("/file-shares/bulk", {
+      method: "POST",
+      body: JSON.stringify({
+        file_ids: fileIds,
+        user_ids: userIds,
+        permission_level: permissionLevel,
+      }),
+    });
+  }
+
+  async getSharedWithMe(
+    limit: number = 50,
+    offset: number = 0,
+    permissionLevel?: string,
+    mimeTypeFilter?: string
+  ): Promise<{ success: boolean; files: FileShare[] }> {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+    });
+
+    if (permissionLevel) params.append("permission_level", permissionLevel);
+    if (mimeTypeFilter) params.append("mime_type_filter", mimeTypeFilter);
+
+    return this.request(`/file-shares/shared-with-me?${params}`);
+  }
+
+  async getSharedByMe(
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<{ success: boolean; shares: FileShare[] }> {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+    });
+
+    return this.request(`/file-shares/shared-by-me?${params}`);
+  }
+
+  async getFileShares(
+    fileId: string
+  ): Promise<{ success: boolean; shares: FileShare[] }> {
+    return this.request(`/file-shares/file/${fileId}`);
+  }
+
+  async checkFileAccess(fileId: string): Promise<{
+    success: boolean;
+    access: {
+      has_access: boolean;
+      permission_level?: string;
+      access_type?: string;
+    };
+  }> {
+    return this.request(`/file-shares/file/${fileId}/access`);
+  }
+
+  async updateSharePermission(
+    shareId: string,
+    newPermission: "read" | "write" | "admin"
+  ): Promise<{ success: boolean; share: FileShare }> {
+    return this.request(`/file-shares/${shareId}`, {
+      method: "PUT",
+      body: JSON.stringify({ permission_level: newPermission }),
+    });
+  }
+
+  async removeShare(
+    shareId: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request(`/file-shares/${shareId}`, { method: "DELETE" });
+  }
+
+  async shareWithProjectTeam(
+    fileId: string,
+    permissionLevel: "read" | "write" | "admin" = "read"
+  ): Promise<{ success: boolean; shares: FileShare[] }> {
+    return this.request(`/file-shares/file/${fileId}/share-with-team`, {
+      method: "POST",
+      body: JSON.stringify({ permission_level: permissionLevel }),
+    });
+  }
+
+  async removeAllFileShares(
+    fileId: string
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request(`/file-shares/file/${fileId}/remove-all`, {
+      method: "DELETE",
+    });
+  }
+
+  async getUserSharingStats(userId: string): Promise<{
+    success: boolean;
+    stats: {
+      shared_by_user: number;
+      shared_with_user: number;
+      files_owned: number;
+      total_file_shares: number;
+    };
+  }> {
+    return this.request(`/file-shares/user/${userId}/stats`);
+  }
+
+  async getSharingAnalytics(
+    dateFrom?: string,
+    dateTo?: string
+  ): Promise<{
+    success: boolean;
+    analytics: any;
+  }> {
+    const params = new URLSearchParams();
+    if (dateFrom) params.append("date_from", dateFrom);
+    if (dateTo) params.append("date_to", dateTo);
+
+    const queryString = params.toString();
+    return this.request(
+      `/file-shares/analytics${queryString ? `?${queryString}` : ""}`
+    );
   }
 }
 
