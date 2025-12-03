@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { apiClient } from "../../lib/api";
+import { UserAvatar } from "../profile/UserAvatar";
 
 interface Task {
   task_id: string;
@@ -625,9 +626,14 @@ export function TaskDetailPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-1">
-                      <span className="font-semibold">
-                        {log.user?.username || "Unknown User"}
-                      </span>
+                      <UserAvatar
+                        userId={log.user_id}
+                        username={log.user?.username || "Unknown User"}
+                        profilePhotoUrl={log.user?.profile_photo_url}
+                        size="sm"
+                        showName={true}
+                        showPopover={true}
+                      />
                       <span className="text-sm text-gray-400">
                         {log.hours_logged}h
                       </span>

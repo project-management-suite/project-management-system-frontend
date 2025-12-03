@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Project, Task, apiClient, type User } from "../../lib/api";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   ArrowLeft,
   Plus,
@@ -143,6 +144,7 @@ const EditProjectModal = ({
 
 // Inline Project Member Component
 const ProjectMemberManagement = ({ project }: { project: Project }) => {
+  const { user } = useAuth();
   const [allDevelopers, setAllDevelopers] = useState<User[]>([]);
   const [currentMembers, setCurrentMembers] = useState<any[]>([]);
   const [selectedDevelopers, setSelectedDevelopers] = useState<string[]>([]);
@@ -153,6 +155,9 @@ const ProjectMemberManagement = ({ project }: { project: Project }) => {
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  // Check if user can manage members (only ADMIN or MANAGER)
+  const canManageMembers = user?.role === "ADMIN" || user?.role === "MANAGER";
 
   useEffect(() => {
     fetchAllDevelopers();
@@ -250,22 +255,24 @@ const ProjectMemberManagement = ({ project }: { project: Project }) => {
         <p className="text-sm opacity-70">{project.description}</p>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-2 opacity-70">
-          Search Developers
-        </label>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 opacity-50 w-5 h-5" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by username or email..."
-            className="w-full pl-10 pr-4 py-3 glass rounded-lg border border-white/10 focus:border-[var(--brand)]/50 focus:ring-1 focus:ring-[var(--brand)]/50 outline-none transition-colors"
-            style={{ background: "var(--tile-dark)" }}
-          />
+      {canManageMembers && (
+        <div>
+          <label className="block text-sm font-medium mb-2 opacity-70">
+            Search Developers
+          </label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 opacity-50 w-5 h-5" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by username or email..."
+              className="w-full pl-10 pr-4 py-3 glass rounded-lg border border-white/10 focus:border-[var(--brand)]/50 focus:ring-1 focus:ring-[var(--brand)]/50 outline-none transition-colors"
+              style={{ background: "var(--tile-dark)" }}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {loading ? (
         <div className="text-center py-8">
@@ -276,130 +283,159 @@ const ProjectMemberManagement = ({ project }: { project: Project }) => {
         </div>
       ) : (
         <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-semibold">
-              Available Developers ({filteredDevelopers.length})
-            </h3>
-            <div className="text-sm opacity-60">
-              {selectedDevelopers.length} selected
-            </div>
-          </div>
-
-          <div className="max-h-96 overflow-y-auto glass rounded-lg border border-white/10 mb-4">
-            {filteredDevelopers.length === 0 ? (
-              <div className="p-4 text-center opacity-50">
-                {searchTerm
-                  ? "No developers found matching your search"
-                  : "No developers available"}
+          {canManageMembers ? (
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold">
+                  Available Developers ({filteredDevelopers.length})
+                </h3>
+                <div className="text-sm opacity-60">
+                  {selectedDevelopers.length} selected
+                </div>
               </div>
-            ) : (
-              <div className="divide-y divide-white/5">
-                {filteredDevelopers.map((developer: User) => {
-                  const isSelected = selectedDevelopers.includes(
-                    developer.user_id
-                  );
-                  const isCurrentMember = currentMembers.some((m: any) => {
-                    const memberId =
-                      m?.member_id || m?.user_id || m?.member?.user_id;
-                    return memberId === developer.user_id;
-                  });
 
-                  return (
-                    <div
-                      key={developer.user_id}
-                      className={`p-4 hover:bg-white/5 cursor-pointer transition-colors select-none ${
-                        isSelected ? "bg-[var(--brand)]/10" : ""
-                      }`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleDeveloperToggle(developer.user_id);
-                      }}
-                      onMouseDown={(e) => e.preventDefault()}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                              isSelected
-                                ? "bg-[var(--brand)] border-[var(--brand)]"
-                                : "border-white/30"
-                            }`}
-                          >
-                            {isSelected && (
-                              <Check className="w-3 h-3 text-white" />
-                            )}
-                          </div>
-                          <UserAvatar
-                            userId={developer.user_id}
-                            username={developer.username}
-                            profilePhotoUrl={developer.profile_photo_url}
-                            size="md"
-                            showName={false}
-                            showPopover={true}
-                          />
-                          <div>
-                            <div className="font-medium">
-                              {developer.username}
-                              {isCurrentMember && (
-                                <span className="ml-2 px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">
-                                  Current Member
-                                </span>
+              <div className="max-h-96 overflow-y-auto glass rounded-lg border border-white/10 mb-4">
+                {filteredDevelopers.length === 0 ? (
+                  <div className="p-4 text-center opacity-50">
+                    {searchTerm
+                      ? "No developers found matching your search"
+                      : "No developers available"}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-white/5">
+                    {filteredDevelopers.map((developer: User) => {
+                      const isSelected = selectedDevelopers.includes(
+                        developer.user_id
+                      );
+                      const isCurrentMember = currentMembers.some((m: any) => {
+                        const memberId =
+                          m?.member_id || m?.user_id || m?.member?.user_id;
+                        return memberId === developer.user_id;
+                      });
+
+                      return (
+                        <div
+                          key={developer.user_id}
+                          className={`p-4 ${
+                            canManageMembers
+                              ? "hover:bg-white/5 cursor-pointer"
+                              : ""
+                          } transition-colors select-none ${
+                            isSelected ? "bg-[var(--brand)]/10" : ""
+                          }`}
+                          onClick={
+                            canManageMembers
+                              ? (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleDeveloperToggle(developer.user_id);
+                                }
+                              : undefined
+                          }
+                          onMouseDown={
+                            canManageMembers
+                              ? (e) => e.preventDefault()
+                              : undefined
+                          }
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {canManageMembers && (
+                                <div
+                                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                                    isSelected
+                                      ? "bg-[var(--brand)] border-[var(--brand)]"
+                                      : "border-white/30"
+                                  }`}
+                                >
+                                  {isSelected && (
+                                    <Check className="w-3 h-3 text-white" />
+                                  )}
+                                </div>
                               )}
+                              <UserAvatar
+                                userId={developer.user_id}
+                                username={developer.username}
+                                profilePhotoUrl={developer.profile_photo_url}
+                                size="md"
+                                showName={false}
+                                showPopover={true}
+                              />
+                              <div>
+                                <div className="font-medium">
+                                  {developer.username}
+                                  {isCurrentMember && (
+                                    <span className="ml-2 px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">
+                                      Current Member
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-sm opacity-70">
+                                  {developer.email}
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-sm opacity-70">
-                              {developer.email}
+                            <div className="text-xs opacity-50 uppercase tracking-wide">
+                              {developer.role}
                             </div>
                           </div>
                         </div>
-                        <div className="text-xs opacity-50 uppercase tracking-wide">
-                          {developer.role}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-          <div className="flex items-center gap-3 mb-4">
-            <button
-              onClick={handleSaveAssignments}
-              disabled={saving || selectedDevelopers.length === 0}
-              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {saving ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Users className="w-4 h-4" />
-                  Save Assignments ({selectedDevelopers.length})
-                </>
+              {canManageMembers && (
+                <div className="flex items-center gap-3 mb-4">
+                  <button
+                    onClick={handleSaveAssignments}
+                    disabled={saving || selectedDevelopers.length === 0}
+                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {saving ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Users className="w-4 h-4" />
+                        Save Assignments ({selectedDevelopers.length})
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedDevelopers([]);
+                      setSearchTerm("");
+                    }}
+                    disabled={saving}
+                    className="btn-ghost disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear Selection
+                  </button>
+                </div>
               )}
-            </button>
-
-            <button
-              onClick={() => {
-                setSelectedDevelopers([]);
-                setSearchTerm("");
-              }}
-              disabled={saving}
-              className="btn-ghost disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              <X className="w-4 h-4" />
-              Clear Selection
-            </button>
-          </div>
+            </>
+          ) : (
+            /* Developer view - only show current members */
+            <div>
+              <h3 className="text-lg font-semibold mb-3">
+                Project Members ({currentMembers.length})
+              </h3>
+            </div>
+          )}
 
           {currentMembers.length > 0 && (
             <div className="p-4 glass rounded-lg">
-              <h4 className="font-medium mb-2">
-                Current Project Members ({currentMembers.length})
-              </h4>
+              {canManageMembers && (
+                <h4 className="font-medium mb-2">
+                  Current Project Members ({currentMembers.length})
+                </h4>
+              )}
               <div className="flex flex-wrap gap-3">
                 {currentMembers.map((member: any, index: number) => {
                   const memberData = member?.member || member;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { apiClient } from "../../lib/api";
 import { User, Mail, Phone, MapPin, Briefcase, Calendar } from "lucide-react";
 
@@ -93,7 +94,7 @@ export const UserPopover = ({
     timeoutRef.current = setTimeout(() => {
       setIsVisible(true);
       updatePosition();
-    }, 300); // Delay before showing popover
+    }, 300);
   };
 
   const handleMouseLeave = () => {
@@ -102,39 +103,51 @@ export const UserPopover = ({
     }
     timeoutRef.current = setTimeout(() => {
       setIsVisible(false);
-    }, 200); // Delay before hiding popover
+    }, 200);
   };
 
   const updatePosition = () => {
-    if (triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const popoverWidth = 320;
-      const popoverHeight = 400;
+    if (!triggerRef.current) return;
 
-      // Account for scroll position
-      const scrollTop =
-        window.pageYOffset || document.documentElement.scrollTop;
-      const scrollLeft =
-        window.pageXOffset || document.documentElement.scrollLeft;
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const popoverWidth = 320;
+    const popoverHeight = 400;
+    const gap = 8;
 
-      let top = rect.bottom + scrollTop + 8;
-      let left = rect.left + scrollLeft + rect.width / 2 - popoverWidth / 2;
+    // Default: position to the right of the trigger
+    let top = triggerRect.top;
+    let left = triggerRect.right + gap;
 
-      // Adjust if popover goes off-screen horizontally
-      if (left < scrollLeft + 8) {
-        left = scrollLeft + 8;
+    // Check if popover goes off-screen on the right
+    if (left + popoverWidth > window.innerWidth - 16) {
+      // Try positioning to the left
+      left = triggerRect.left - popoverWidth - gap;
+
+      // If still off-screen, center align below
+      if (left < 16) {
+        left = triggerRect.left + triggerRect.width / 2 - popoverWidth / 2;
+        top = triggerRect.bottom + gap;
+
+        // Ensure it stays within viewport horizontally
+        if (left < 16) left = 16;
+        if (left + popoverWidth > window.innerWidth - 16) {
+          left = window.innerWidth - popoverWidth - 16;
+        }
       }
-      if (left + popoverWidth > scrollLeft + window.innerWidth - 8) {
-        left = scrollLeft + window.innerWidth - popoverWidth - 8;
-      }
-
-      // Adjust if popover goes off-screen vertically
-      if (top + popoverHeight > scrollTop + window.innerHeight - 8) {
-        top = rect.top + scrollTop - popoverHeight - 8;
-      }
-
-      setPosition({ top, left });
     }
+
+    // Check if popover goes off-screen at the bottom
+    if (top + popoverHeight > window.innerHeight - 16) {
+      // Position above trigger
+      top = triggerRect.top - popoverHeight - gap;
+
+      // If still off-screen at top, align to top with margin
+      if (top < 16) {
+        top = 16;
+      }
+    }
+
+    setPosition({ top, left });
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -161,131 +174,126 @@ export const UserPopover = ({
         {children}
       </div>
 
-      {isVisible && (
-        <div
-          ref={popoverRef}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          className="absolute z-[9999] animate-fade-in"
-          style={{
-            top: `${position.top}px`,
-            left: `${position.left}px`,
-            width: "320px",
-          }}
-        >
-          <div className="glass-soft border border-white/20 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl">
-            {isLoading ? (
-              <div className="p-6 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-white/10 border-t-[var(--brand)] rounded-full animate-spin" />
-              </div>
-            ) : profile ? (
-              <div className="p-5 space-y-4">
-                {/* Header with Photo */}
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                    {profile.profile_photo_url ? (
-                      <img
-                        src={profile.profile_photo_url}
-                        alt={profile.username}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="w-8 h-8 text-white" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-lg truncate">
-                      {profile.username}
-                    </h3>
-                    {profile.position && (
-                      <p className="text-sm opacity-70 truncate">
-                        {profile.position}
-                      </p>
-                    )}
-                    {profile.role && (
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium mt-2 ${getRoleBadgeColor(
-                          profile.role
-                        )}`}
-                      >
-                        {profile.role}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Bio */}
-                {profile.bio && (
-                  <div className="glass-soft rounded-lg p-3">
-                    <p className="text-sm opacity-80 line-clamp-3">
-                      {profile.bio}
-                    </p>
-                  </div>
-                )}
-
-                {/* Details */}
-                <div className="space-y-2.5 text-sm">
-                  {profile.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 opacity-50 flex-shrink-0" />
-                      <span className="opacity-80 truncate">
-                        {profile.email}
-                      </span>
-                    </div>
-                  )}
-
-                  {profile.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4 opacity-50 flex-shrink-0" />
-                      <span className="opacity-80">{profile.phone}</span>
-                    </div>
-                  )}
-
-                  {profile.department && (
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 opacity-50 flex-shrink-0" />
-                      <span className="opacity-80">{profile.department}</span>
-                    </div>
-                  )}
-
-                  {profile.address && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 opacity-50 flex-shrink-0" />
-                      <span className="opacity-80 truncate">
-                        {profile.address}
-                      </span>
-                    </div>
-                  )}
-
-                  {profile.join_date && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 opacity-50 flex-shrink-0" />
-                      <span className="opacity-80">
-                        Joined{" "}
-                        {new Date(profile.join_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="p-6 text-center opacity-70">
-                <p className="text-sm">Profile not available</p>
-              </div>
-            )}
-          </div>
-
-          {/* Arrow pointer */}
+      {isVisible &&
+        createPortal(
           <div
-            className="absolute w-3 h-3 bg-[var(--glass-bg)] border-l border-t border-white/20 transform rotate-45"
+            ref={popoverRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            className="fixed z-[9999] animate-fade-in"
             style={{
-              top: "-6px",
-              left: "50%",
-              marginLeft: "-6px",
+              top: `${position.top}px`,
+              left: `${position.left}px`,
+              width: "320px",
             }}
-          />
-        </div>
-      )}
+          >
+            <div
+              className="border border-white/20 rounded-xl shadow-2xl overflow-hidden backdrop-blur-xl text-white"
+              style={{ backgroundColor: "#171717" }}
+            >
+              {isLoading ? (
+                <div className="p-6 flex items-center justify-center">
+                  <div className="w-8 h-8 border-4 border-white/10 border-t-[var(--brand)] rounded-full animate-spin" />
+                </div>
+              ) : profile ? (
+                <div className="p-5 space-y-4">
+                  {/* Header with Photo */}
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                      {profile.profile_photo_url ? (
+                        <img
+                          src={profile.profile_photo_url}
+                          alt={profile.username}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="w-8 h-8 text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-lg truncate">
+                        {profile.username}
+                      </h3>
+                      {profile.position && (
+                        <p className="text-sm opacity-70 truncate">
+                          {profile.position}
+                        </p>
+                      )}
+                      {profile.role && (
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium mt-2 ${getRoleBadgeColor(
+                            profile.role
+                          )}`}
+                        >
+                          {profile.role}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bio */}
+                  {profile.bio && (
+                    <div className="glass-soft rounded-lg p-3">
+                      <p className="text-sm opacity-80 line-clamp-3">
+                        {profile.bio}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Details */}
+                  <div className="space-y-2.5 text-sm">
+                    {profile.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 opacity-50 flex-shrink-0" />
+                        <span className="opacity-80 truncate">
+                          {profile.email}
+                        </span>
+                      </div>
+                    )}
+
+                    {profile.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 opacity-50 flex-shrink-0" />
+                        <span className="opacity-80">{profile.phone}</span>
+                      </div>
+                    )}
+
+                    {profile.department && (
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4 opacity-50 flex-shrink-0" />
+                        <span className="opacity-80">{profile.department}</span>
+                      </div>
+                    )}
+
+                    {profile.address && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 opacity-50 flex-shrink-0" />
+                        <span className="opacity-80 truncate">
+                          {profile.address}
+                        </span>
+                      </div>
+                    )}
+
+                    {profile.join_date && (
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 opacity-50 flex-shrink-0" />
+                        <span className="opacity-80">
+                          Joined{" "}
+                          {new Date(profile.join_date).toLocaleDateString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-6 text-center opacity-70">
+                  <p className="text-sm">Profile not available</p>
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
 
       <style>{`
         @keyframes fade-in {
