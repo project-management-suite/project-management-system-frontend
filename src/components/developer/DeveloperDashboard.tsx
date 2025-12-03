@@ -24,6 +24,7 @@ import {
   Award,
 } from "lucide-react";
 import { FileLibrary } from "../files/FileLibrary";
+import { TaskManager } from "../manager/TaskManager";
 
 interface DashboardStats {
   totalTasks: number;
@@ -58,25 +59,24 @@ export const DeveloperDashboard = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
-  const [activeTab, setActiveTab] = useState<"tasks" | "projects" | "team">(
+  const [activeTab, setActiveTab] = useState<"tasks" | "projects" | "teams">(
     "tasks"
   );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
-  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const [showFullProjectView, setShowFullProjectView] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<any | null>(null);
+  const [projectDetails, setProjectDetails] = useState<any | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   useEffect(() => {
     fetchDeveloperTasks();
     fetchDeveloperProjects();
+    fetchDeveloperTeams();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
-
-  useEffect(() => {
-    if (projects.length > 0) {
-      fetchTeamMembers();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects]);
 
   const fetchDeveloperTasks = async () => {
     if (!user) return;
@@ -119,15 +119,15 @@ export const DeveloperDashboard = () => {
     if (!user) return;
 
     try {
-      // Get projects where developer is a member (includes both direct membership and task assignments)
-      const response = await apiClient.getProjects();
-      const developerProjects = response.projects || [];
+      // Get projects where developer is a member
+      const response = await apiClient.getDeveloperTeams();
+      const developerTeams = response.teams || [];
 
-      // For each project, get tasks assigned to this developer for additional info
+      // Convert teams to projects format and get tasks for each
       const projectsWithTasks = [];
-      for (const project of developerProjects) {
+      for (const team of developerTeams) {
         try {
-          const tasksResponse = await apiClient.getTasks(project.project_id);
+          const tasksResponse = await apiClient.getTasks(team.team_id);
           const projectTasks = tasksResponse.tasks || [];
           const assignedTasks = projectTasks.filter((task: Task) =>
             task.assigned_developers?.some(
@@ -136,19 +136,31 @@ export const DeveloperDashboard = () => {
           );
 
           const projectWithTasks = {
-            ...project,
+            project_id: team.team_id,
+            project_name: team.team_name,
+            description: team.description,
+            created_at: team.created_at,
+            member_count: team.member_count,
             assignedTasks,
+            teamMembers: team.members,
+            isLead: team.is_lead,
           };
           projectsWithTasks.push(projectWithTasks);
         } catch (error) {
           console.error(
-            `Error fetching tasks for project ${project.project_id}:`,
+            `Error fetching tasks for project ${team.team_id}:`,
             error
           );
           // Still include the project even if task fetching fails
           projectsWithTasks.push({
-            ...project,
+            project_id: team.team_id,
+            project_name: team.team_name,
+            description: team.description,
+            created_at: team.created_at,
+            member_count: team.member_count,
             assignedTasks: [],
+            teamMembers: team.members,
+            isLead: team.is_lead,
           });
         }
       }
@@ -170,95 +182,46 @@ export const DeveloperDashboard = () => {
     }
   };
 
-  const fetchTeamMembers = async () => {
+  const fetchDeveloperTeams = async () => {
     if (!user) return;
 
     try {
-      // Get team members from all projects the user is a member of
-      const allTeamMembers: any[] = [];
-
-      for (const project of projects) {
-        try {
-          const membersResponse = await apiClient.getProjectMembers(
-            project.project_id
-          );
-          const projectMembers = membersResponse.members || [];
-
-          // Add project members
-          projectMembers.forEach((membership) => {
-            if (
-              membership.member &&
-              !allTeamMembers.find(
-                (tm) => tm.user_id === membership.member.user_id
-              )
-            ) {
-              allTeamMembers.push({
-                ...membership.member,
-                project_role: membership.role,
-                joined_at: membership.joined_at,
-              });
-            }
-          });
-        } catch (error) {
-          console.error(
-            `Error fetching members for project ${project.project_id}:`,
-            error
-          );
-        }
-      }
-
-      // Also get team members from task assignments (for backwards compatibility)
-      for (const project of projects) {
-        try {
-          const tasksResponse = await apiClient.getTasks(project.project_id);
-          const projectTasks = tasksResponse.tasks || [];
-
-          // Get unique team members from all tasks in this project
-          projectTasks.forEach((task: Task) => {
-            if (task.assigned_developers) {
-              task.assigned_developers.forEach((dev: any) => {
-                if (!allTeamMembers.find((tm) => tm.user_id === dev.user_id)) {
-                  allTeamMembers.push(dev);
-                }
-              });
-            }
-          });
-        } catch (error) {
-          console.error(
-            `Error fetching task assignments for project ${project.project_id}:`,
-            error
-          );
-        }
-      }
-
-      // Ensure current user is included
-      if (
-        user &&
-        !allTeamMembers.find((member) => member.user_id === user.user_id)
-      ) {
-        allTeamMembers.push({
-          user_id: user.user_id,
-          username: user.username,
-          email: user.email,
-          role: user.role,
-        });
-      }
-
-      setTeamMembers(allTeamMembers);
+      const response = await apiClient.getDeveloperTeams();
+      setTeams(response.teams || []);
     } catch (error) {
-      console.error("Error fetching team members:", error);
-      // Fallback: just show current user
-      if (user) {
-        setTeamMembers([
-          {
-            user_id: user.user_id,
-            username: user.username,
-            email: user.email,
-            role: user.role,
-          },
-        ]);
-      }
+      console.error("Error fetching developer teams:", error);
+      setTeams([]);
     }
+  };
+
+  const handleProjectClick = async (project: any) => {
+    setSelectedProject(project);
+    setLoadingDetails(true);
+
+    try {
+      const details = await apiClient.getDeveloperProjectDetails(
+        project.project_id
+      );
+      setProjectDetails(details);
+    } catch (error) {
+      console.error("Error fetching project details:", error);
+      setProjectDetails(null);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleTeamClick = (team: any) => {
+    setSelectedTeam(team);
+  };
+
+  const closeProjectModal = () => {
+    setSelectedProject(null);
+    setProjectDetails(null);
+  };
+
+  const closeTeamModal = () => {
+    setSelectedTeam(null);
   };
 
   const handleTaskClick = (task: Task) => {
@@ -354,6 +317,19 @@ export const DeveloperDashboard = () => {
     );
   }
 
+  // Show TaskManager if full project view is requested
+  if (showFullProjectView && selectedProject) {
+    return (
+      <TaskManager
+        project={selectedProject}
+        onBack={() => {
+          setShowFullProjectView(false);
+          setSelectedProject(null);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -397,15 +373,15 @@ export const DeveloperDashboard = () => {
             My Projects
           </button>
           <button
-            onClick={() => setActiveTab("team")}
+            onClick={() => setActiveTab("teams")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === "team"
+              activeTab === "teams"
                 ? "bg-white/10 text-white"
                 : "text-gray-400 hover:bg-white/5"
             }`}
           >
             <Users className="w-4 h-4 inline mr-2" />
-            Team
+            My Teams
           </button>
         </div>
       </div>
@@ -636,11 +612,12 @@ export const DeveloperDashboard = () => {
                 {projects.map((project) => (
                   <div
                     key={project.project_id}
-                    className="p-6 hover:bg-white/5 transition-all"
+                    className="p-6 hover:bg-white/5 transition-all group cursor-pointer"
+                    onClick={() => handleProjectClick(project)}
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2 group-hover:text-[var(--brand)] transition-colors">
                           <Briefcase className="w-5 h-5 text-[var(--brand)]" />
                           {project.project_name}
                         </h3>
@@ -709,6 +686,32 @@ export const DeveloperDashboard = () => {
                           </div>
                         </div>
                       )}
+
+                    {/* Action Buttons */}
+                    <div className="mt-4 pt-4 border-t border-white/10 flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleProjectClick(project);
+                        }}
+                        className="btn-ghost text-sm px-3 py-2 flex items-center gap-2"
+                      >
+                        <FileText className="w-4 h-4" />
+                        View Details
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Navigate to full project management view (like manager sees)
+                          setSelectedProject(project);
+                          setShowFullProjectView(true);
+                        }}
+                        className="btn-primary text-sm px-3 py-2 flex items-center gap-2"
+                      >
+                        <FolderOpen className="w-4 h-4" />
+                        Open Project
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -717,65 +720,69 @@ export const DeveloperDashboard = () => {
         </>
       ) : (
         <>
-          {/* Team Members */}
+          {/* My Teams */}
           <div className="glass rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-white/5">
               <h2 className="text-xl font-semibold flex items-center gap-2">
                 <Users className="w-6 h-6" style={{ color: "var(--brand)" }} />
-                Team Members ({teamMembers.length})
+                My Teams ({teams.length})
               </h2>
             </div>
 
-            {teamMembers.length === 0 ? (
+            {teams.length === 0 ? (
               <div className="p-12 text-center">
                 <div className="neo-icon w-20 h-20 mx-auto mb-4 flex items-center justify-center rounded-2xl">
                   <Users className="w-10 h-10 opacity-30" />
                 </div>
-                <p className="text-lg mb-2">No team members found</p>
+                <p className="text-lg mb-2">No teams found</p>
                 <p className="text-sm opacity-70">
-                  Team members will appear here when loaded
+                  Teams you're a member of will appear here
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-                {teamMembers.map((member) => (
+              <div className="divide-y divide-white/5">
+                {teams.map((team) => (
                   <div
-                    key={member.user_id}
-                    className="bg-[var(--tile-dark)] rounded-xl p-6 hover:bg-white/5 transition-all"
+                    key={team.team_id}
+                    className="p-6 hover:bg-white/5 transition-all group cursor-pointer"
+                    onClick={() => handleTeamClick(team)}
                   >
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="neo-icon w-12 h-12 flex items-center justify-center rounded-xl">
-                        <User
-                          className="w-6 h-6"
-                          style={{ color: "var(--brand)" }}
-                        />
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Users className="w-5 h-5 text-[var(--brand)]" />
+                          <h3 className="text-lg font-semibold group-hover:text-[var(--brand)] transition-colors">
+                            {team.team_name}
+                          </h3>
+                          {team.is_lead && (
+                            <span className="px-2 py-1 text-xs bg-[var(--brand)]/20 text-[var(--brand)] rounded">
+                              Team Lead
+                            </span>
+                          )}
+                        </div>
+                        {team.description && (
+                          <p className="opacity-70 mb-3 text-sm">
+                            {team.description}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap items-center gap-4 text-xs opacity-60">
+                          <div className="flex items-center gap-1">
+                            <UserPlus className="w-3 h-3" />
+                            <span>{team.member_count} members</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>
+                              Created{" "}
+                              {new Date(team.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold truncate">
-                          {member.username}
-                        </h3>
-                        <p className="text-sm opacity-60 truncate">
-                          {member.email}
-                        </p>
+
+                      <div className="ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Eye className="w-5 h-5 opacity-50" />
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          member.role === "ADMIN"
-                            ? "bg-red-500/20 text-red-400"
-                            : member.role === "MANAGER"
-                            ? "bg-blue-500/20 text-blue-400"
-                            : "bg-green-500/20 text-green-400"
-                        }`}
-                      >
-                        {member.role}
-                      </span>
-                      {member.user_id === user?.user_id && (
-                        <span className="text-xs opacity-50 bg-[var(--brand)]/20 text-[var(--brand)] px-2 py-1 rounded">
-                          You
-                        </span>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -930,6 +937,242 @@ export const DeveloperDashboard = () => {
                     <Send className="w-4 h-4" />
                     Send
                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Project Details Modal */}
+      {selectedProject && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="neo-tile rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Briefcase className="w-6 h-6 text-[var(--brand)]" />
+                <div>
+                  <h2 className="text-xl font-bold">
+                    {selectedProject.project_name}
+                  </h2>
+                  <p className="text-sm opacity-70">Project Details</p>
+                </div>
+              </div>
+              <button
+                onClick={closeProjectModal}
+                className="neo-icon hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5 opacity-70" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingDetails ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin neo-icon w-8 h-8 flex items-center justify-center rounded-lg">
+                    <Briefcase
+                      className="w-5 h-5"
+                      style={{ color: "var(--brand)" }}
+                    />
+                  </div>
+                  <span className="ml-3 opacity-70">Loading details...</span>
+                </div>
+              ) : projectDetails ? (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="glass rounded-lg p-4">
+                      <h3 className="text-sm font-semibold opacity-70 mb-2">
+                        Team Members
+                      </h3>
+                      <p className="text-2xl font-bold">
+                        {projectDetails.members?.length || 0}
+                      </p>
+                    </div>
+                    <div className="glass rounded-lg p-4">
+                      <h3 className="text-sm font-semibold opacity-70 mb-2">
+                        Your Tasks
+                      </h3>
+                      <p className="text-2xl font-bold">
+                        {projectDetails.user_tasks?.length || 0}
+                      </p>
+                    </div>
+                    <div className="glass rounded-lg p-4">
+                      <h3 className="text-sm font-semibold opacity-70 mb-2">
+                        Your Role
+                      </h3>
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          projectDetails.project?.user_role === "LEAD"
+                            ? "bg-[var(--brand)]/20 text-[var(--brand)]"
+                            : "bg-green-500/20 text-green-400"
+                        }`}
+                      >
+                        {projectDetails.project?.user_role || "Member"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {selectedProject.description && (
+                    <div>
+                      <h3 className="text-sm font-semibold opacity-70 mb-2">
+                        Description
+                      </h3>
+                      <p className="opacity-80">
+                        {selectedProject.description}
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="text-sm font-semibold opacity-70 mb-4">
+                      Team Members ({projectDetails.members?.length || 0})
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {projectDetails.members?.map((member: any) => (
+                        <div
+                          key={member.user_id}
+                          className="glass rounded-lg p-4 flex items-center gap-3"
+                        >
+                          <div className="neo-icon w-8 h-8 flex items-center justify-center rounded-full">
+                            <User
+                              className="w-4 h-4"
+                              style={{ color: "var(--brand)" }}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium">{member.username}</div>
+                            <div className="text-xs opacity-60">
+                              {member.email}
+                            </div>
+                          </div>
+                          <span
+                            className={`px-2 py-1 text-xs rounded ${
+                              member.project_role === "LEAD"
+                                ? "bg-[var(--brand)]/20 text-[var(--brand)]"
+                                : "bg-gray-500/20 text-gray-400"
+                            }`}
+                          >
+                            {member.project_role}
+                          </span>
+                        </div>
+                      )) || (
+                        <p className="text-sm opacity-60 col-span-2">
+                          No team members found
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="opacity-70">Failed to load project details</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Team Details Modal */}
+      {selectedTeam && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="neo-tile rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Users className="w-6 h-6 text-[var(--brand)]" />
+                <div>
+                  <h2 className="text-xl font-bold">
+                    {selectedTeam.team_name}
+                  </h2>
+                  <p className="text-sm opacity-70">Team Details</p>
+                </div>
+              </div>
+              <button
+                onClick={closeTeamModal}
+                className="neo-icon hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5 opacity-70" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-6">
+                {selectedTeam.description && (
+                  <div>
+                    <h3 className="text-sm font-semibold opacity-70 mb-2">
+                      Description
+                    </h3>
+                    <p className="opacity-80">{selectedTeam.description}</p>
+                  </div>
+                )}
+
+                <div>
+                  <h3 className="text-sm font-semibold opacity-70 mb-4">
+                    Team Members ({selectedTeam.member_count})
+                    {selectedTeam.is_lead && (
+                      <span className="ml-2 px-2 py-1 text-xs bg-[var(--brand)]/20 text-[var(--brand)] rounded">
+                        You are Team Lead
+                      </span>
+                    )}
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {selectedTeam.members?.map((member: any) => (
+                      <div
+                        key={member.user_id}
+                        className="glass rounded-lg p-4"
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="neo-icon w-10 h-10 flex items-center justify-center rounded-full">
+                            <User
+                              className="w-5 h-5"
+                              style={{ color: "var(--brand)" }}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium flex items-center gap-2">
+                              {member.username}
+                              {member.user_id === user?.user_id && (
+                                <span className="text-xs opacity-50 bg-[var(--brand)]/20 text-[var(--brand)] px-2 py-1 rounded">
+                                  You
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm opacity-60">
+                              {member.email}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex justify-between">
+                          <span
+                            className={`px-2 py-1 text-xs rounded ${
+                              member.role === "ADMIN"
+                                ? "bg-red-500/20 text-red-400"
+                                : member.role === "MANAGER"
+                                ? "bg-blue-500/20 text-blue-400"
+                                : "bg-green-500/20 text-green-400"
+                            }`}
+                          >
+                            {member.role}
+                          </span>
+                          {member.project_role && (
+                            <span
+                              className={`px-2 py-1 text-xs rounded ${
+                                member.project_role === "LEAD"
+                                  ? "bg-[var(--brand)]/20 text-[var(--brand)]"
+                                  : "bg-gray-500/20 text-gray-400"
+                              }`}
+                            >
+                              {member.project_role}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )) || (
+                      <p className="text-sm opacity-60 col-span-2">
+                        No team members found
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

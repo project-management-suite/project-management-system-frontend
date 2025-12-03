@@ -14,13 +14,412 @@ import {
   ChevronRight,
   FolderOpen,
   Upload,
+  Users,
+  UserPlus,
+  Search,
+  Check,
+  X,
+  Edit2,
 } from "lucide-react";
 import { TaskForm } from "./TaskForm";
 import { FileUploader } from "../files/FileUploader";
 import { FileLibrary } from "../files/FileLibrary";
 import { FileSharing } from "../files/FileSharing";
 
-type ViewType = "list" | "board" | "calendar" | "files";
+// Edit Project Modal Component
+const EditProjectModal = ({
+  project,
+  onClose,
+  onSuccess,
+}: {
+  project: Project;
+  onClose: () => void;
+  onSuccess: () => void;
+}) => {
+  const [name, setName] = useState(project.project_name);
+  const [description, setDescription] = useState(project.description || "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      await apiClient.updateProject(project.project_id, {
+        project_name: name,
+        description,
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update project");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+      style={{ background: "rgba(0, 0, 0, 0.4)" }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="relative glass rounded-xl w-full max-w-md"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--tile)",
+          border: "1px solid var(--border)",
+          backdropFilter: "blur(10px)",
+        }}
+      >
+        <div className="px-6 py-4 border-b border-white/10">
+          <h2 className="text-2xl font-bold">Edit Project</h2>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="p-4 rounded-lg border bg-red-500/10 border-red-500/20 text-red-400">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium mb-2 opacity-70">
+              Project Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 glass rounded-lg border border-white/10 focus:border-[var(--brand)]/50 focus:ring-1 focus:ring-[var(--brand)]/50 outline-none transition-colors"
+              style={{ background: "var(--tile-dark)" }}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2 opacity-70">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+              className="w-full px-4 py-3 glass rounded-lg border border-white/10 focus:border-[var(--brand)]/50 focus:ring-1 focus:ring-[var(--brand)]/50 outline-none transition-colors resize-none"
+              style={{ background: "var(--tile-dark)" }}
+            />
+          </div>
+
+          <div className="flex gap-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn-ghost flex-1"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Updating..." : "Update Project"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Inline Project Member Component
+const ProjectMemberManagement = ({ project }: { project: Project }) => {
+  const [allDevelopers, setAllDevelopers] = useState<User[]>([]);
+  const [currentMembers, setCurrentMembers] = useState<any[]>([]);
+  const [selectedDevelopers, setSelectedDevelopers] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  useEffect(() => {
+    fetchAllDevelopers();
+    fetchProjectMembers();
+  }, []);
+
+  const fetchAllDevelopers = async () => {
+    try {
+      const response = await apiClient.getUsersByRole("DEVELOPER");
+      setAllDevelopers(response.users || []);
+    } catch (error) {
+      console.error("Error fetching developers:", error);
+      showMessage("error", "Failed to load developers");
+    }
+  };
+
+  const fetchProjectMembers = async () => {
+    setLoading(true);
+    try {
+      const response = await apiClient.getProjectMembers(project.project_id);
+      setCurrentMembers(response.members || []);
+      const memberIds =
+        response.members
+          ?.map((m: any) => m.member_id)
+          .filter((id: string | undefined): id is string => Boolean(id)) || [];
+      setSelectedDevelopers(memberIds);
+    } catch (error) {
+      console.error("Error fetching project members:", error);
+      showMessage("error", "Failed to load project members");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const showMessage = (type: "success" | "error", text: string) => {
+    setMessage({ type, text });
+    setTimeout(() => setMessage(null), 5000);
+  };
+
+  const handleDeveloperToggle = (developerId: string) => {
+    setSelectedDevelopers((prev: string[]) => {
+      if (prev.includes(developerId)) {
+        return prev.filter((id: string) => id !== developerId);
+      } else {
+        return [...prev, developerId];
+      }
+    });
+  };
+
+  const handleSaveAssignments = async () => {
+    if (selectedDevelopers.length === 0) {
+      showMessage("error", "Please select at least one developer");
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiClient.assignProjectMembers(
+        project.project_id,
+        selectedDevelopers
+      );
+      showMessage("success", "Project members assigned successfully!");
+      fetchProjectMembers();
+    } catch (error: any) {
+      console.error("Error assigning members:", error);
+      showMessage("error", error.message || "Failed to assign members");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const filteredDevelopers = allDevelopers.filter(
+    (dev: User) =>
+      dev.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      dev.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6">
+      {message && (
+        <div
+          className={`p-4 rounded-lg border ${
+            message.type === "success"
+              ? "bg-green-500/10 border-green-500/20 text-green-400"
+              : "bg-red-500/10 border-red-500/20 text-red-400"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
+
+      <div className="glass rounded-lg p-4">
+        <h3 className="font-semibold mb-1" style={{ color: "var(--brand)" }}>
+          {project.project_name}
+        </h3>
+        <p className="text-sm opacity-70">{project.description}</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2 opacity-70">
+          Search Developers
+        </label>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 opacity-50 w-5 h-5" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by username or email..."
+            className="w-full pl-10 pr-4 py-3 glass rounded-lg border border-white/10 focus:border-[var(--brand)]/50 focus:ring-1 focus:ring-[var(--brand)]/50 outline-none transition-colors"
+            style={{ background: "var(--tile-dark)" }}
+          />
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="neo-icon w-12 h-12 mx-auto mb-4 flex items-center justify-center rounded-xl">
+            <Users className="w-6 h-6 opacity-50 animate-pulse" />
+          </div>
+          <div className="opacity-70">Loading project members...</div>
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold">
+              Available Developers ({filteredDevelopers.length})
+            </h3>
+            <div className="text-sm opacity-60">
+              {selectedDevelopers.length} selected
+            </div>
+          </div>
+
+          <div className="max-h-96 overflow-y-auto glass rounded-lg border border-white/10 mb-4">
+            {filteredDevelopers.length === 0 ? (
+              <div className="p-4 text-center opacity-50">
+                {searchTerm
+                  ? "No developers found matching your search"
+                  : "No developers available"}
+              </div>
+            ) : (
+              <div className="divide-y divide-white/5">
+                {filteredDevelopers.map((developer: User) => {
+                  const isSelected = selectedDevelopers.includes(
+                    developer.user_id
+                  );
+                  const isCurrentMember = currentMembers.some((m: any) => {
+                    const memberId =
+                      m?.member_id || m?.user_id || m?.member?.user_id;
+                    return memberId === developer.user_id;
+                  });
+
+                  return (
+                    <div
+                      key={developer.user_id}
+                      className={`p-4 hover:bg-white/5 cursor-pointer transition-colors select-none ${
+                        isSelected ? "bg-[var(--brand)]/10" : ""
+                      }`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleDeveloperToggle(developer.user_id);
+                      }}
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                              isSelected
+                                ? "bg-[var(--brand)] border-[var(--brand)]"
+                                : "border-white/30"
+                            }`}
+                          >
+                            {isSelected && (
+                              <Check className="w-3 h-3 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium">
+                              {developer.username}
+                              {isCurrentMember && (
+                                <span className="ml-2 px-2 py-1 text-xs bg-green-500/20 text-green-400 rounded-full">
+                                  Current Member
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm opacity-70">
+                              {developer.email}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-xs opacity-50 uppercase tracking-wide">
+                          {developer.role}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 mb-4">
+            <button
+              onClick={handleSaveAssignments}
+              disabled={saving || selectedDevelopers.length === 0}
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Users className="w-4 h-4" />
+                  Save Assignments ({selectedDevelopers.length})
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                setSelectedDevelopers([]);
+                setSearchTerm("");
+              }}
+              disabled={saving}
+              className="btn-ghost disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <X className="w-4 h-4" />
+              Clear Selection
+            </button>
+          </div>
+
+          {currentMembers.length > 0 && (
+            <div className="p-4 glass rounded-lg">
+              <h4 className="font-medium mb-2">
+                Current Project Members ({currentMembers.length})
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {currentMembers.map((member: any, index: number) => {
+                  const memberData = member?.member || member;
+                  const memberRole =
+                    member?.role || member?.project_role || "MEMBER";
+                  const memberName =
+                    memberData?.username || memberData?.email || "Unknown";
+                  const memberKey =
+                    member?.membership_id ||
+                    member?.user_id ||
+                    `member-${index}`;
+
+                  return (
+                    <span
+                      key={memberKey}
+                      className="px-3 py-1 bg-white/10 border border-white/20 rounded-full text-sm"
+                    >
+                      {memberName} ({memberRole})
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+type ViewType = "list" | "board" | "calendar" | "files" | "members";
 
 interface TaskManagerProps {
   project: Project;
@@ -41,6 +440,7 @@ export const TaskManager = ({
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showFileSharing, setShowFileSharing] = useState(false);
+  const [showEditProject, setShowEditProject] = useState(false);
 
   const fetchTasks = async () => {
     try {
@@ -474,6 +874,14 @@ export const TaskManager = ({
     );
   };
 
+  const renderMembersView = () => {
+    return (
+      <div className="glass rounded-xl p-6">
+        <ProjectMemberManagement project={project} />
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -529,6 +937,22 @@ export const TaskManager = ({
               <FolderOpen className="w-4 h-4" />
             </button>
             <button
+              onClick={() => setCurrentView("members")}
+              className={`neo-icon w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
+                currentView === "members" ? "bg-white/10" : "hover:bg-white/5"
+              }`}
+              title="Members View"
+            >
+              <Users className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowEditProject(true)}
+              className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg hover:bg-white/10"
+              title="Edit Project"
+            >
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button
               onClick={() => setShowTaskForm(true)}
               className="btn-primary ml-2"
             >
@@ -557,6 +981,7 @@ export const TaskManager = ({
           {currentView === "board" && renderBoardView()}
           {currentView === "calendar" && renderCalendarView()}
           {currentView === "files" && renderFilesView()}
+          {currentView === "members" && renderMembersView()}
         </>
       )}
 
@@ -568,6 +993,18 @@ export const TaskManager = ({
             setShowTaskForm(false);
             fetchTasks();
             onTaskUpdate?.();
+          }}
+        />
+      )}
+
+      {/* Edit Project Modal */}
+      {showEditProject && (
+        <EditProjectModal
+          project={project}
+          onClose={() => setShowEditProject(false)}
+          onSuccess={() => {
+            setShowEditProject(false);
+            onBack(); // Go back to refresh the project list
           }}
         />
       )}

@@ -287,6 +287,51 @@ class ApiClient {
     });
   }
 
+  // Developer-specific project endpoints
+  async getDeveloperTeams(): Promise<{
+    user_id: string;
+    teams: Array<{
+      team_id: string;
+      team_name: string;
+      description: string;
+      created_at: string;
+      member_count: number;
+      is_lead: boolean;
+      members: Array<{
+        user_id: string;
+        username: string;
+        email: string;
+        role: string;
+        project_role: string;
+        joined_at?: string;
+      }>;
+    }>;
+  }> {
+    return this.request("/projects/developer/teams");
+  }
+
+  async getDeveloperProjectDetails(projectId: string): Promise<{
+    project: {
+      project_id: string;
+      project_name: string;
+      description: string;
+      created_at: string;
+      member_count: number;
+      user_role: string;
+    };
+    members: Array<{
+      user_id: string;
+      username: string;
+      email: string;
+      role: string;
+      project_role: string;
+      joined_at: string;
+    }>;
+    user_tasks: any[];
+  }> {
+    return this.request(`/projects/developer/${projectId}/details`);
+  }
+
   // Task endpoints
   async getTasks(projectId?: string): Promise<{ tasks: Task[] }> {
     const endpoint = projectId ? `/tasks/project/${projectId}` : "/tasks";

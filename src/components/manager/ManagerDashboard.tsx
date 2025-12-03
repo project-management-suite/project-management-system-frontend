@@ -108,7 +108,10 @@ export const ManagerDashboard = () => {
         <div className="glass rounded-xl p-8">
           <div className="flex flex-col items-center gap-4">
             <div className="animate-spin neo-icon w-16 h-16 flex items-center justify-center rounded-lg">
-              <Briefcase className="w-8 h-8" style={{ color: "var(--brand)" }} />
+              <Briefcase
+                className="w-8 h-8"
+                style={{ color: "var(--brand)" }}
+              />
             </div>
             <div className="text-lg opacity-70">Loading dashboard...</div>
           </div>
@@ -136,11 +139,16 @@ export const ManagerDashboard = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="neo-icon w-14 h-14 flex items-center justify-center rounded-xl">
-              <Briefcase className="w-7 h-7" style={{ color: "var(--brand)" }} />
+              <Briefcase
+                className="w-7 h-7"
+                style={{ color: "var(--brand)" }}
+              />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Manager Dashboard</h1>
-              <p className="text-sm opacity-70 mt-1">Manage your projects and tasks</p>
+              <p className="text-sm opacity-70 mt-1">
+                Manage your projects and tasks
+              </p>
             </div>
           </div>
           <button
@@ -158,7 +166,10 @@ export const ManagerDashboard = () => {
         <div className="glass rounded-xl p-6 hover:glass-soft transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="neo-icon w-12 h-12 flex items-center justify-center rounded-lg">
-              <FolderKanban className="w-6 h-6" style={{ color: "var(--brand)" }} />
+              <FolderKanban
+                className="w-6 h-6"
+                style={{ color: "var(--brand)" }}
+              />
             </div>
             <TrendingUp className="w-5 h-5 opacity-50" />
           </div>
@@ -189,7 +200,10 @@ export const ManagerDashboard = () => {
         <div className="glass rounded-xl p-6 hover:glass-soft transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="neo-icon w-12 h-12 flex items-center justify-center rounded-lg">
-              <CheckCircle className="w-6 h-6" style={{ color: "var(--brand)" }} />
+              <CheckCircle
+                className="w-6 h-6"
+                style={{ color: "var(--brand)" }}
+              />
             </div>
           </div>
           <h3 className="text-3xl font-bold mb-1">{stats.completedTasks}</h3>
