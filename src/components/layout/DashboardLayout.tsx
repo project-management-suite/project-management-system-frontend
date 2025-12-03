@@ -5,11 +5,10 @@ import {
   LayoutDashboard,
   Users,
   FolderKanban,
-  Settings,
   Menu,
   X,
-  CheckSquare,
   Share2,
+  Calendar,
 } from "lucide-react";
 import { ReactNode, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -50,6 +49,12 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       roles: ["ADMIN", "MANAGER", "DEVELOPER"],
     },
     {
+      icon: Calendar,
+      label: "Calendar",
+      path: "/calendar",
+      roles: ["ADMIN", "MANAGER", "DEVELOPER"],
+    },
+    {
       icon: Users,
       label: "User Management",
       path: "/admin/users",
@@ -59,7 +64,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       icon: FolderKanban,
       label: "Projects",
       path: "/admin/projects",
-      roles: ["ADMIN", "MANAGER"],
+      roles: ["ADMIN"],
     },
     {
       icon: Share2,

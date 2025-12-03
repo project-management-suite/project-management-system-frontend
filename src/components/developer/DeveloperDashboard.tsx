@@ -19,6 +19,7 @@ import {
   FolderOpen,
   Users,
   Briefcase,
+  Eye,
   UserPlus,
   Target,
   Award,

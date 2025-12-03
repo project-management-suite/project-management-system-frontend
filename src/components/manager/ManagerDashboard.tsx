@@ -4,6 +4,7 @@ import { apiClient, Project } from "../../lib/api";
 import { ProjectList } from "./ProjectList";
 import { TaskManager } from "./TaskManager";
 import { ProjectForm } from "./ProjectForm";
+import { TeamForm } from "./TeamForm";
 import {
   FolderKanban,
   Calendar,
@@ -12,6 +13,7 @@ import {
   Plus,
   TrendingUp,
   Briefcase,
+  Users,
 } from "lucide-react";
 
 interface DashboardStats {
@@ -32,6 +34,7 @@ export const ManagerDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [showProjectForm, setShowProjectForm] = useState(false);
+  const [showTeamForm, setShowTeamForm] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const fetchProjects = async () => {
@@ -151,13 +154,22 @@ export const ManagerDashboard = () => {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setShowProjectForm(true)}
-            className="btn-primary"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">New Project</span>
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowTeamForm(true)}
+              className="btn-primary"
+            >
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">New Team</span>
+            </button>
+            <button
+              onClick={() => setShowProjectForm(true)}
+              className="btn-primary"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">New Project</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -227,6 +239,16 @@ export const ManagerDashboard = () => {
             setShowProjectForm(false);
             const projectsData = await fetchProjects();
             await fetchStats(projectsData);
+          }}
+        />
+      )}
+
+      {showTeamForm && (
+        <TeamForm
+          onClose={() => setShowTeamForm(false)}
+          onSuccess={() => {
+            setShowTeamForm(false);
+            // Optionally refresh data if needed
           }}
         />
       )}
