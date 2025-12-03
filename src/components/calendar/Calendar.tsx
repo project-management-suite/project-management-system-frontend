@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Calendar from "react-calendar";
+import DatePicker from "react-datepicker";
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -16,6 +17,7 @@ import {
 import { apiClient, Task } from "../../lib/api";
 import { useAuth } from "../../contexts/AuthContext";
 import "react-calendar/dist/Calendar.css";
+import "react-datepicker/dist/react-datepicker.css";
 
 interface Event {
   id: string;
@@ -573,22 +575,48 @@ export const CalendarView = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowMeetingModal(false)}
+            onClick={() => {
+              setShowMeetingModal(false);
+              setUserSearch("");
+            }}
           />
-          <div className="relative card p-6 w-full max-w-md animate-scale-in">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold">Schedule Meeting</h3>
+          <div className="relative glass rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in flex flex-col border border-white/10">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg">
+                  <Plus className="w-5 h-5" style={{ color: "var(--brand)" }} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Schedule Meeting</h3>
+                  <p className="text-xs opacity-70">
+                    Create a new meeting with team members
+                  </p>
+                </div>
+              </div>
               <button
-                onClick={() => setShowMeetingModal(false)}
-                className="p-1 hover:bg-white/10 rounded"
+                onClick={() => {
+                  setShowMeetingModal(false);
+                  setUserSearch("");
+                }}
+                className="neo-icon w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            {/* Form Content */}
+            <div className="flex-1 overflow-y-auto space-y-5 pr-2">
+              {/* Meeting Title */}
               <div>
-                <label className="block text-sm font-medium mb-2">Title</label>
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
+                  <CalendarIcon
+                    className="w-4 h-4"
+                    style={{ color: "var(--brand)" }}
+                  />
+                  Meeting Title
+                  <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
                   value={newMeeting.title}
@@ -598,13 +626,17 @@ export const CalendarView = () => {
                       title: e.target.value,
                     }))
                   }
-                  className="input w-full"
-                  placeholder="Meeting title"
+                  className="neo-input w-full"
+                  placeholder="e.g., Sprint Planning Meeting"
+                  autoComplete="off"
+                  data-form-type="other"
                 />
               </div>
 
+              {/* Description */}
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Edit className="w-4 h-4" style={{ color: "var(--brand)" }} />
                   Description
                 </label>
                 <textarea
@@ -615,44 +647,101 @@ export const CalendarView = () => {
                       description: e.target.value,
                     }))
                   }
-                  className="input w-full h-20 resize-none"
-                  placeholder="Meeting description"
+                  className="neo-input w-full h-24 resize-none"
+                  placeholder="Add meeting agenda or notes..."
+                  autoComplete="off"
+                  data-form-type="other"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* Date and Time */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Date</label>
-                  <input
-                    type="date"
-                    value={newMeeting.date}
-                    onChange={(e) =>
-                      setNewMeeting((prev) => ({
-                        ...prev,
-                        date: e.target.value,
-                      }))
+                  <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
+                    <CalendarIcon
+                      className="w-4 h-4"
+                      style={{ color: "var(--brand)" }}
+                    />
+                    Date
+                    <span className="text-red-400">*</span>
+                  </label>
+                  <DatePicker
+                    selected={
+                      newMeeting.date
+                        ? new Date(newMeeting.date + "T00:00:00")
+                        : null
                     }
-                    className="input w-full"
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(
+                          2,
+                          "0"
+                        );
+                        const day = String(date.getDate()).padStart(2, "0");
+                        setNewMeeting((prev) => ({
+                          ...prev,
+                          date: `${year}-${month}-${day}`,
+                        }));
+                      } else {
+                        setNewMeeting((prev) => ({ ...prev, date: "" }));
+                      }
+                    }}
+                    dateFormat="MMM d, yyyy"
+                    placeholderText="Select date"
+                    className="neo-input w-full px-3 py-2 rounded-lg cursor-pointer"
+                    wrapperClassName="w-full"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Time</label>
-                  <input
-                    type="time"
-                    value={newMeeting.time}
-                    onChange={(e) =>
-                      setNewMeeting((prev) => ({
-                        ...prev,
-                        time: e.target.value,
-                      }))
+                  <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
+                    <Clock
+                      className="w-4 h-4"
+                      style={{ color: "var(--brand)" }}
+                    />
+                    Time
+                    <span className="text-red-400">*</span>
+                  </label>
+                  <DatePicker
+                    selected={
+                      newMeeting.time
+                        ? new Date(`2000-01-01T${newMeeting.time}`)
+                        : null
                     }
-                    className="input w-full"
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        const hours = String(date.getHours()).padStart(2, "0");
+                        const minutes = String(date.getMinutes()).padStart(
+                          2,
+                          "0"
+                        );
+                        setNewMeeting((prev) => ({
+                          ...prev,
+                          time: `${hours}:${minutes}`,
+                        }));
+                      } else {
+                        setNewMeeting((prev) => ({ ...prev, time: "" }));
+                      }
+                    }}
+                    showTimeSelect
+                    showTimeSelectOnly
+                    timeIntervals={15}
+                    timeCaption="Time"
+                    dateFormat="h:mm aa"
+                    placeholderText="Select time"
+                    className="neo-input w-full px-3 py-2 rounded-lg cursor-pointer"
+                    wrapperClassName="w-full"
                   />
                 </div>
               </div>
 
+              {/* Location */}
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
+                  <MapPin
+                    className="w-4 h-4"
+                    style={{ color: "var(--brand)" }}
+                  />
                   Location
                 </label>
                 <input
@@ -664,53 +753,133 @@ export const CalendarView = () => {
                       location: e.target.value,
                     }))
                   }
-                  className="input w-full"
-                  placeholder="Meeting location or video link"
+                  className="neo-input w-full"
+                  placeholder="Office room, Zoom link, or Google Meet URL"
+                  autoComplete="off"
+                  data-form-type="other"
                 />
               </div>
 
+              {/* Attendees */}
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Users
+                    className="w-4 h-4"
+                    style={{ color: "var(--brand)" }}
+                  />
                   Attendees
+                  <span className="text-xs opacity-60 font-normal">
+                    ({newMeeting.attendees.length} selected)
+                  </span>
                 </label>
-                <div className="max-h-32 overflow-y-auto space-y-2">
-                  {filteredUsers.map((user) => (
-                    <label
-                      key={user.user_id}
-                      className="flex items-center gap-2"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={newMeeting.attendees.includes(user.user_id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setNewMeeting((prev) => ({
-                              ...prev,
-                              attendees: [...prev.attendees, user.user_id],
-                            }));
-                          } else {
-                            setNewMeeting((prev) => ({
-                              ...prev,
-                              attendees: prev.attendees.filter(
-                                (id) => id !== user.user_id
-                              ),
-                            }));
-                          }
-                        }}
-                        className="rounded"
-                      />
-                      <span className="text-sm">
-                        {user.username} ({user.email})
-                      </span>
-                    </label>
-                  ))}
+
+                {/* Search Input */}
+                <div className="relative mb-3">
+                  <input
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    className="neo-input w-full pl-9"
+                    placeholder="Search by name or email..."
+                    autoComplete="off"
+                    data-form-type="other"
+                  />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50">
+                    <Users className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {/* Selected Attendees */}
+                {newMeeting.attendees.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {users
+                      .filter((u) => newMeeting.attendees.includes(u.user_id))
+                      .map((attendee) => (
+                        <div
+                          key={attendee.user_id}
+                          className="glass-soft px-3 py-1.5 rounded-lg text-sm flex items-center gap-2"
+                        >
+                          <span>{attendee.username}</span>
+                          <button
+                            onClick={() => {
+                              setNewMeeting((prev) => ({
+                                ...prev,
+                                attendees: prev.attendees.filter(
+                                  (id) => id !== attendee.user_id
+                                ),
+                              }));
+                            }}
+                            className="hover:text-red-400 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                {/* Attendees List */}
+                <div className="glass-soft rounded-lg max-h-48 overflow-y-auto">
+                  {filteredUsers.length > 0 ? (
+                    <div className="divide-y divide-white/5">
+                      {filteredUsers.map((user) => (
+                        <label
+                          key={user.user_id}
+                          className="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={newMeeting.attendees.includes(
+                              user.user_id
+                            )}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setNewMeeting((prev) => ({
+                                  ...prev,
+                                  attendees: [...prev.attendees, user.user_id],
+                                }));
+                              } else {
+                                setNewMeeting((prev) => ({
+                                  ...prev,
+                                  attendees: prev.attendees.filter(
+                                    (id) => id !== user.user_id
+                                  ),
+                                }));
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-white/20"
+                          />
+                          <div className="neo-icon w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0 text-xs">
+                            {user.username.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm">
+                              {user.username}
+                            </div>
+                            <div className="text-xs opacity-60 truncate">
+                              {user.email}
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center opacity-50">
+                      <Users className="w-8 h-8 mx-auto mb-2" />
+                      <p className="text-sm">No users found</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            {/* Footer Actions */}
+            <div className="flex gap-3 mt-6 pt-4 border-t border-white/10">
               <button
-                onClick={() => setShowMeetingModal(false)}
+                onClick={() => {
+                  setShowMeetingModal(false);
+                  setUserSearch("");
+                }}
                 className="btn-ghost flex-1"
               >
                 Cancel
@@ -720,8 +889,12 @@ export const CalendarView = () => {
                   handleCreateMeeting();
                   setUserSearch("");
                 }}
-                className="btn-primary flex-1"
+                disabled={
+                  !newMeeting.title || !newMeeting.date || !newMeeting.time
+                }
+                className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
+                <CalendarIcon className="w-4 h-4" />
                 Schedule Meeting
               </button>
             </div>
@@ -870,13 +1043,25 @@ export const CalendarView = () => {
               });
             }}
           />
-          <div className="relative card p-6 w-full max-w-md animate-scale-in">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold">Edit Meeting</h3>
+          <div className="relative glass rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-hidden animate-scale-in flex flex-col border border-white/10">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg">
+                  <Edit className="w-5 h-5" style={{ color: "var(--brand)" }} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Edit Meeting</h3>
+                  <p className="text-xs opacity-70">
+                    Update meeting details and attendees
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={() => {
                   setShowEditModal(false);
                   setEditingEvent(null);
+                  setUserSearch("");
                   setNewMeeting({
                     title: "",
                     description: "",
@@ -886,15 +1071,24 @@ export const CalendarView = () => {
                     attendees: [],
                   });
                 }}
-                className="p-1 hover:bg-white/10 rounded"
+                className="neo-icon w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            {/* Form Content */}
+            <div className="flex-1 overflow-y-auto space-y-5 pr-2">
+              {/* Meeting Title */}
               <div>
-                <label className="block text-sm font-medium mb-2">Title</label>
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
+                  <CalendarIcon
+                    className="w-4 h-4"
+                    style={{ color: "var(--brand)" }}
+                  />
+                  Meeting Title
+                  <span className="text-red-400">*</span>
+                </label>
                 <input
                   type="text"
                   value={newMeeting.title}
@@ -904,13 +1098,17 @@ export const CalendarView = () => {
                       title: e.target.value,
                     }))
                   }
-                  className="input w-full"
-                  placeholder="Meeting title"
+                  className="neo-input w-full"
+                  placeholder="e.g., Sprint Planning Meeting"
+                  autoComplete="off"
+                  data-form-type="other"
                 />
               </div>
 
+              {/* Description */}
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Edit className="w-4 h-4" style={{ color: "var(--brand)" }} />
                   Description
                 </label>
                 <textarea
@@ -921,44 +1119,101 @@ export const CalendarView = () => {
                       description: e.target.value,
                     }))
                   }
-                  className="input w-full h-20 resize-none"
-                  placeholder="Meeting description"
+                  className="neo-input w-full h-24 resize-none"
+                  placeholder="Add meeting agenda or notes..."
+                  autoComplete="off"
+                  data-form-type="other"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* Date and Time */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Date</label>
-                  <input
-                    type="date"
-                    value={newMeeting.date}
-                    onChange={(e) =>
-                      setNewMeeting((prev) => ({
-                        ...prev,
-                        date: e.target.value,
-                      }))
+                  <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
+                    <CalendarIcon
+                      className="w-4 h-4"
+                      style={{ color: "var(--brand)" }}
+                    />
+                    Date
+                    <span className="text-red-400">*</span>
+                  </label>
+                  <DatePicker
+                    selected={
+                      newMeeting.date
+                        ? new Date(newMeeting.date + "T00:00:00")
+                        : null
                     }
-                    className="input w-full"
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(
+                          2,
+                          "0"
+                        );
+                        const day = String(date.getDate()).padStart(2, "0");
+                        setNewMeeting((prev) => ({
+                          ...prev,
+                          date: `${year}-${month}-${day}`,
+                        }));
+                      } else {
+                        setNewMeeting((prev) => ({ ...prev, date: "" }));
+                      }
+                    }}
+                    dateFormat="MMM d, yyyy"
+                    placeholderText="Select date"
+                    className="neo-input w-full px-3 py-2 rounded-lg cursor-pointer"
+                    wrapperClassName="w-full"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Time</label>
-                  <input
-                    type="time"
-                    value={newMeeting.time}
-                    onChange={(e) =>
-                      setNewMeeting((prev) => ({
-                        ...prev,
-                        time: e.target.value,
-                      }))
+                  <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
+                    <Clock
+                      className="w-4 h-4"
+                      style={{ color: "var(--brand)" }}
+                    />
+                    Time
+                    <span className="text-red-400">*</span>
+                  </label>
+                  <DatePicker
+                    selected={
+                      newMeeting.time
+                        ? new Date(`2000-01-01T${newMeeting.time}`)
+                        : null
                     }
-                    className="input w-full"
+                    onChange={(date: Date | null) => {
+                      if (date) {
+                        const hours = String(date.getHours()).padStart(2, "0");
+                        const minutes = String(date.getMinutes()).padStart(
+                          2,
+                          "0"
+                        );
+                        setNewMeeting((prev) => ({
+                          ...prev,
+                          time: `${hours}:${minutes}`,
+                        }));
+                      } else {
+                        setNewMeeting((prev) => ({ ...prev, time: "" }));
+                      }
+                    }}
+                    showTimeSelect
+                    showTimeSelectOnly
+                    timeIntervals={15}
+                    timeCaption="Time"
+                    dateFormat="h:mm aa"
+                    placeholderText="Select time"
+                    className="neo-input w-full px-3 py-2 rounded-lg cursor-pointer"
+                    wrapperClassName="w-full"
                   />
                 </div>
               </div>
 
+              {/* Location */}
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
+                  <MapPin
+                    className="w-4 h-4"
+                    style={{ color: "var(--brand)" }}
+                  />
                   Location
                 </label>
                 <input
@@ -970,55 +1225,133 @@ export const CalendarView = () => {
                       location: e.target.value,
                     }))
                   }
-                  className="input w-full"
-                  placeholder="Meeting location or video link"
+                  className="neo-input w-full"
+                  placeholder="Office room, Zoom link, or Google Meet URL"
+                  autoComplete="off"
+                  data-form-type="other"
                 />
               </div>
 
+              {/* Attendees */}
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Users
+                    className="w-4 h-4"
+                    style={{ color: "var(--brand)" }}
+                  />
                   Attendees
+                  <span className="text-xs opacity-60 font-normal">
+                    ({newMeeting.attendees.length} selected)
+                  </span>
                 </label>
-                <div className="max-h-32 overflow-y-auto space-y-2">
-                  {filteredUsers.map((user) => (
-                    <label
-                      key={user.user_id}
-                      className="flex items-center gap-2"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={newMeeting.attendees.includes(user.user_id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setNewMeeting((prev) => ({
-                              ...prev,
-                              attendees: [...prev.attendees, user.user_id],
-                            }));
-                          } else {
-                            setNewMeeting((prev) => ({
-                              ...prev,
-                              attendees: prev.attendees.filter(
-                                (id) => id !== user.user_id
-                              ),
-                            }));
-                          }
-                        }}
-                        className="rounded"
-                      />
-                      <span className="text-sm">
-                        {user.username} ({user.email})
-                      </span>
-                    </label>
-                  ))}
+
+                {/* Search Input */}
+                <div className="relative mb-3">
+                  <input
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => setUserSearch(e.target.value)}
+                    className="neo-input w-full pl-9"
+                    placeholder="Search by name or email..."
+                    autoComplete="off"
+                    data-form-type="other"
+                  />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 opacity-50">
+                    <Users className="w-4 h-4" />
+                  </div>
+                </div>
+
+                {/* Selected Attendees */}
+                {newMeeting.attendees.length > 0 && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {users
+                      .filter((u) => newMeeting.attendees.includes(u.user_id))
+                      .map((attendee) => (
+                        <div
+                          key={attendee.user_id}
+                          className="glass-soft px-3 py-1.5 rounded-lg text-sm flex items-center gap-2"
+                        >
+                          <span>{attendee.username}</span>
+                          <button
+                            onClick={() => {
+                              setNewMeeting((prev) => ({
+                                ...prev,
+                                attendees: prev.attendees.filter(
+                                  (id) => id !== attendee.user_id
+                                ),
+                              }));
+                            }}
+                            className="hover:text-red-400 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                {/* Attendees List */}
+                <div className="glass-soft rounded-lg max-h-48 overflow-y-auto">
+                  {filteredUsers.length > 0 ? (
+                    <div className="divide-y divide-white/5">
+                      {filteredUsers.map((user) => (
+                        <label
+                          key={user.user_id}
+                          className="flex items-center gap-3 p-3 hover:bg-white/5 transition-colors cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={newMeeting.attendees.includes(
+                              user.user_id
+                            )}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setNewMeeting((prev) => ({
+                                  ...prev,
+                                  attendees: [...prev.attendees, user.user_id],
+                                }));
+                              } else {
+                                setNewMeeting((prev) => ({
+                                  ...prev,
+                                  attendees: prev.attendees.filter(
+                                    (id) => id !== user.user_id
+                                  ),
+                                }));
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-white/20"
+                          />
+                          <div className="neo-icon w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0 text-xs">
+                            {user.username.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm">
+                              {user.username}
+                            </div>
+                            <div className="text-xs opacity-60 truncate">
+                              {user.email}
+                            </div>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center opacity-50">
+                      <Users className="w-8 h-8 mx-auto mb-2" />
+                      <p className="text-sm">No users found</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            {/* Footer Actions */}
+            <div className="flex gap-3 mt-6 pt-4 border-t border-white/10">
               <button
                 onClick={() => {
                   setShowEditModal(false);
                   setEditingEvent(null);
+                  setUserSearch("");
                   setNewMeeting({
                     title: "",
                     description: "",
@@ -1034,8 +1367,12 @@ export const CalendarView = () => {
               </button>
               <button
                 onClick={handleUpdateMeeting}
-                className="btn-primary flex-1"
+                disabled={
+                  !newMeeting.title || !newMeeting.date || !newMeeting.time
+                }
+                className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
+                <Edit className="w-4 h-4" />
                 Update Meeting
               </button>
             </div>
