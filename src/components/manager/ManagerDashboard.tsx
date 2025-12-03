@@ -5,6 +5,7 @@ import { ProjectList } from "./ProjectList";
 import { TaskManager } from "./TaskManager";
 import { ProjectForm } from "./ProjectForm";
 import { TeamForm } from "./TeamForm";
+import { TeamList } from "./TeamList";
 import {
   FolderKanban,
   Calendar,
@@ -26,6 +27,8 @@ interface DashboardStats {
 export const ManagerDashboard = () => {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<"projects" | "teams">("projects");
   const [stats, setStats] = useState<DashboardStats>({
     totalProjects: 0,
     totalTasks: 0,
@@ -47,6 +50,20 @@ export const ManagerDashboard = () => {
       return projects;
     } catch (error) {
       console.error("Error fetching projects:", error);
+      return [];
+    }
+  };
+
+  const fetchTeams = async () => {
+    if (!user) return;
+
+    try {
+      const response = await apiClient.get("/teams");
+      const teams = response.teams || [];
+      setTeams(teams);
+      return teams;
+    } catch (error) {
+      console.error("Error fetching teams:", error);
       return [];
     }
   };
@@ -98,6 +115,7 @@ export const ManagerDashboard = () => {
       setLoading(true);
       // Fetch projects first, then use that data for stats to avoid duplicate calls
       const projectsData = await fetchProjects();
+      await fetchTeams();
       await fetchStats(projectsData);
       setLoading(false);
     };
@@ -128,9 +146,6 @@ export const ManagerDashboard = () => {
       <TaskManager
         project={selectedProject}
         onBack={() => setSelectedProject(null)}
-        onTaskUpdate={() => {
-          fetchStats(projects);
-        }}
       />
     );
   }
@@ -223,14 +238,47 @@ export const ManagerDashboard = () => {
         </div>
       </div>
 
-      <ProjectList
-        projects={projects}
-        onSelectProject={setSelectedProject}
-        onRefresh={async () => {
-          const projectsData = await fetchProjects();
-          await fetchStats(projectsData);
-        }}
-      />
+      {/* Tabs */}
+      <div className="glass rounded-xl p-2">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab("projects")}
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+              activeTab === "projects"
+                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                : "hover:bg-white/5 opacity-70"
+            }`}
+          >
+            <FolderKanban className="w-4 h-4 inline-block mr-2" />
+            My Projects
+          </button>
+          <button
+            onClick={() => setActiveTab("teams")}
+            className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all ${
+              activeTab === "teams"
+                ? "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+                : "hover:bg-white/5 opacity-70"
+            }`}
+          >
+            <Users className="w-4 h-4 inline-block mr-2" />
+            My Teams
+          </button>
+        </div>
+      </div>
+
+      {/* Content based on active tab */}
+      {activeTab === "projects" ? (
+        <ProjectList
+          projects={projects}
+          onSelectProject={setSelectedProject}
+          onRefresh={async () => {
+            const projectsData = await fetchProjects();
+            await fetchStats(projectsData);
+          }}
+        />
+      ) : (
+        <TeamList teams={teams} onRefresh={fetchTeams} />
+      )}
 
       {showProjectForm && (
         <ProjectForm
@@ -248,7 +296,7 @@ export const ManagerDashboard = () => {
           onClose={() => setShowTeamForm(false)}
           onSuccess={() => {
             setShowTeamForm(false);
-            // Optionally refresh data if needed
+            fetchTeams();
           }}
         />
       )}

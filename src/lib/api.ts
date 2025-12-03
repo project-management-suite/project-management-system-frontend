@@ -40,11 +40,28 @@ export interface Task {
   title: string;
   description?: string;
   status: "NEW" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED";
+  priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  progress_percentage?: number;
   start_date?: string;
   end_date?: string;
   created_at: string;
   updated_at: string;
   assigned_developers?: any[];
+}
+
+export interface Comment {
+  comment_id: string;
+  task_id: string;
+  user_id: string;
+  comment_text: string;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    user_id: string;
+    username: string;
+    email: string;
+    role: string;
+  };
 }
 
 export interface File {
@@ -355,6 +372,10 @@ class ApiClient {
     return this.request(endpoint);
   }
 
+  async getTask(taskId: string): Promise<Task> {
+    return this.request(`/tasks/${taskId}`);
+  }
+
   async createTask(
     projectId: string,
     data: {
@@ -372,7 +393,7 @@ class ApiClient {
 
   async updateTask(taskId: string, data: Partial<Task>): Promise<Task> {
     return this.request(`/tasks/${taskId}`, {
-      method: "PUT",
+      method: "PATCH",
       body: JSON.stringify(data),
     });
   }
@@ -390,6 +411,37 @@ class ApiClient {
     return this.request(`/tasks/${taskId}/assign`, {
       method: "POST",
       body: JSON.stringify({ developer_id: developerId }),
+    });
+  }
+
+  // Comment endpoints
+  async getTaskComments(taskId: string): Promise<{ comments: Comment[] }> {
+    return this.request(`/comments/task/${taskId}`);
+  }
+
+  async createComment(
+    taskId: string,
+    commentText: string
+  ): Promise<{ message: string; comment: Comment }> {
+    return this.request(`/comments/task/${taskId}`, {
+      method: "POST",
+      body: JSON.stringify({ comment_text: commentText }),
+    });
+  }
+
+  async updateComment(
+    commentId: string,
+    commentText: string
+  ): Promise<{ message: string; comment: Comment }> {
+    return this.request(`/comments/${commentId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ comment_text: commentText }),
+    });
+  }
+
+  async deleteComment(commentId: string): Promise<{ message: string }> {
+    return this.request(`/comments/${commentId}`, {
+      method: "DELETE",
     });
   }
 

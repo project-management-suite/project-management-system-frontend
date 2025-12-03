@@ -11,8 +11,6 @@ import {
   Filter,
   Search,
   X,
-  Send,
-  MessageSquare,
   User,
   FileText,
   Share2,
@@ -26,6 +24,7 @@ import {
 } from "lucide-react";
 import { FileLibrary } from "../files/FileLibrary";
 import { TaskManager } from "../manager/TaskManager";
+import { TaskEditModal } from "../manager/TaskEditModal";
 
 interface DashboardStats {
   totalTasks: number;
@@ -34,13 +33,6 @@ interface DashboardStats {
   assignedTasks: number;
   totalProjects: number;
   activeProjects: number;
-}
-
-interface Comment {
-  id: string;
-  user: string;
-  text: string;
-  timestamp: Date;
 }
 
 export const DeveloperDashboard = () => {
@@ -58,8 +50,6 @@ export const DeveloperDashboard = () => {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState("");
   const [activeTab, setActiveTab] = useState<"tasks" | "projects" | "teams">(
     "tasks"
   );
@@ -187,7 +177,7 @@ export const DeveloperDashboard = () => {
     if (!user) return;
 
     try {
-      const response = await apiClient.getDeveloperTeams();
+      const response = await apiClient.get("/teams");
       setTeams(response.teams || []);
     } catch (error) {
       console.error("Error fetching developer teams:", error);
@@ -225,43 +215,16 @@ export const DeveloperDashboard = () => {
     setSelectedTeam(null);
   };
 
-  const handleTaskClick = (task: Task) => {
-    setSelectedTask(task);
-    // Load mock comments (replace with API call)
-    setComments([
-      {
-        id: "1",
-        user: "John Doe",
-        text: "Started working on this task",
-        timestamp: new Date(Date.now() - 86400000),
-      },
-      {
-        id: "2",
-        user: "Jane Smith",
-        text: "Please update the documentation as well",
-        timestamp: new Date(Date.now() - 43200000),
-      },
-    ]);
-  };
-
-  const handleAddComment = () => {
-    if (!newComment.trim() || !user) return;
-
-    const comment: Comment = {
-      id: Date.now().toString(),
-      user: user.username,
-      text: newComment,
-      timestamp: new Date(),
-    };
-
-    setComments([...comments, comment]);
-    setNewComment("");
-  };
-
-  const closeTaskModal = () => {
-    setSelectedTask(null);
-    setComments([]);
-    setNewComment("");
+  const handleTaskClick = async (task: Task) => {
+    try {
+      // Fetch fresh task data from server
+      const freshTask = await apiClient.getTask(task.task_id);
+      setSelectedTask(freshTask);
+    } catch (error) {
+      console.error("Error fetching task details:", error);
+      // Fall back to cached task data if fetch fails
+      setSelectedTask(task);
+    }
   };
 
   const getStatusIcon = (status: Task["status"]) => {
@@ -434,37 +397,6 @@ export const DeveloperDashboard = () => {
         </div>
       </div>
 
-      {/* Filters and Search */}
-      {activeTab === "tasks" && (
-        <div className="glass rounded-xl p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 opacity-50" />
-              <input
-                type="text"
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="input pl-10 w-full"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4 opacity-70" />
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="select"
-              >
-                <option value="all">All Status</option>
-                <option value="ASSIGNED">Assigned</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="COMPLETED">Completed</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Content based on active tab */}
       {activeTab === "tasks" ? (
         <>
@@ -479,6 +411,8 @@ export const DeveloperDashboard = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="input pl-10 w-full"
+                  autoComplete="off"
+                  data-form-type="other"
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -795,154 +729,15 @@ export const DeveloperDashboard = () => {
 
       {/* Task Detail Modal */}
       {selectedTask && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="neo-tile rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Modal Header */}
-            <div className="p-6 border-b border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {getStatusIcon(selectedTask.status)}
-                <h2 className="text-2xl font-bold">{selectedTask.title}</h2>
-              </div>
-              <button
-                onClick={closeTaskModal}
-                className="neo-icon hover:bg-white/10 transition-colors"
-              >
-                <X className="w-5 h-5 opacity-70" />
-              </button>
-            </div>
-
-            {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {/* Task Details */}
-              <div>
-                <h3 className="text-sm font-semibold opacity-70 mb-2">
-                  Description
-                </h3>
-                <p className="text-white">
-                  {selectedTask.description || "No description provided"}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h3 className="text-sm font-semibold opacity-70 mb-2">
-                    Status
-                  </h3>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                      selectedTask.status
-                    )}`}
-                  >
-                    {selectedTask.status.replace("_", " ")}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold opacity-70 mb-2">
-                    Priority
-                  </h3>
-                  <span
-                    className="px-3 py-1 rounded-full text-xs text-white font-medium"
-                    style={{
-                      backgroundColor: "var(--brand)",
-                      opacity: 0.2,
-                      color: "var(--brand)",
-                    }}
-                  >
-                    High
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                {selectedTask.start_date && (
-                  <div>
-                    <h3 className="text-sm font-semibold opacity-70 mb-2">
-                      Start Date
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        {new Date(selectedTask.start_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {selectedTask.end_date && (
-                  <div>
-                    <h3 className="text-sm font-semibold opacity-70 mb-2">
-                      Due Date
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      <span>
-                        {new Date(selectedTask.end_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Comments Section */}
-              <div className="border-t border-white/10 pt-6">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <MessageSquare
-                    className="w-5 h-5"
-                    style={{ color: "var(--brand)" }}
-                  />
-                  Comments ({comments.length})
-                </h3>
-
-                {/* Comments List */}
-                <div className="space-y-4 mb-4 max-h-60 overflow-y-auto">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="glass rounded-lg p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="neo-icon w-8 h-8 flex items-center justify-center rounded-full flex-shrink-0">
-                          <User
-                            className="w-4 h-4"
-                            style={{ color: "var(--brand)" }}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-sm">
-                              {comment.user}
-                            </span>
-                            <span className="text-xs opacity-50">
-                              {comment.timestamp.toLocaleDateString()}{" "}
-                              {comment.timestamp.toLocaleTimeString()}
-                            </span>
-                          </div>
-                          <p className="opacity-80 text-sm">{comment.text}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Add Comment */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Add a comment..."
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
-                    className="input flex-1"
-                  />
-                  <button
-                    onClick={handleAddComment}
-                    disabled={!newComment.trim()}
-                    className="btn-primary px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                  >
-                    <Send className="w-4 h-4" />
-                    Send
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <TaskEditModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onSuccess={async () => {
+            await fetchDeveloperTasks();
+            await fetchDeveloperProjects();
+            setSelectedTask(null);
+          }}
+        />
       )}
 
       {/* Project Details Modal */}
@@ -1109,7 +904,7 @@ export const DeveloperDashboard = () => {
 
                 <div>
                   <h3 className="text-sm font-semibold opacity-70 mb-4">
-                    Team Members ({selectedTeam.member_count})
+                    Team Members ({selectedTeam.team_members?.length || 0})
                     {selectedTeam.is_lead && (
                       <span className="ml-2 px-2 py-1 text-xs bg-[var(--brand)]/20 text-[var(--brand)] rounded">
                         You are Team Lead
@@ -1117,58 +912,62 @@ export const DeveloperDashboard = () => {
                     )}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {selectedTeam.members?.map((member: any) => (
-                      <div
-                        key={member.user_id}
-                        className="glass rounded-lg p-4"
-                      >
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="neo-icon w-10 h-10 flex items-center justify-center rounded-full">
-                            <User
-                              className="w-5 h-5"
-                              style={{ color: "var(--brand)" }}
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-medium flex items-center gap-2">
-                              {member.username}
-                              {member.user_id === user?.user_id && (
-                                <span className="text-xs opacity-50 bg-[var(--brand)]/20 text-[var(--brand)] px-2 py-1 rounded">
-                                  You
-                                </span>
-                              )}
+                    {selectedTeam.team_members &&
+                    selectedTeam.team_members.length > 0 ? (
+                      selectedTeam.team_members.map((member: any) => (
+                        <div
+                          key={member.team_member_id}
+                          className="glass rounded-lg p-4"
+                        >
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="neo-icon w-10 h-10 flex items-center justify-center rounded-full">
+                              <User
+                                className="w-5 h-5"
+                                style={{ color: "var(--brand)" }}
+                              />
                             </div>
-                            <div className="text-sm opacity-60">
-                              {member.email}
+                            <div className="flex-1">
+                              <div className="font-medium flex items-center gap-2">
+                                {member.user?.username || "Unknown"}
+                                {member.user?.user_id === user?.user_id && (
+                                  <span className="text-xs opacity-50 bg-[var(--brand)]/20 text-[var(--brand)] px-2 py-1 rounded">
+                                    You
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-sm opacity-60">
+                                {member.user?.email || "N/A"}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex justify-between">
-                          <span
-                            className={`px-2 py-1 text-xs rounded ${
-                              member.role === "ADMIN"
-                                ? "bg-red-500/20 text-red-400"
-                                : member.role === "MANAGER"
-                                ? "bg-blue-500/20 text-blue-400"
-                                : "bg-green-500/20 text-green-400"
-                            }`}
-                          >
-                            {member.role}
-                          </span>
-                          {member.project_role && (
+                          <div className="flex justify-between gap-2">
                             <span
                               className={`px-2 py-1 text-xs rounded ${
-                                member.project_role === "LEAD"
+                                member.user?.role === "ADMIN"
+                                  ? "bg-red-500/20 text-red-400"
+                                  : member.user?.role === "MANAGER"
+                                  ? "bg-blue-500/20 text-blue-400"
+                                  : "bg-green-500/20 text-green-400"
+                              }`}
+                            >
+                              {member.user?.role || "N/A"}
+                            </span>
+                            <span
+                              className={`px-2 py-1 text-xs rounded ${
+                                member.role_in_team === "LEAD_DEVELOPER"
                                   ? "bg-[var(--brand)]/20 text-[var(--brand)]"
+                                  : member.role_in_team === "MANAGER"
+                                  ? "bg-purple-500/20 text-purple-400"
                                   : "bg-gray-500/20 text-gray-400"
                               }`}
                             >
-                              {member.project_role}
+                              {member.role_in_team?.replace("_", " ") ||
+                                "MEMBER"}
                             </span>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                    )) || (
+                      ))
+                    ) : (
                       <p className="text-sm opacity-60 col-span-2">
                         No team members found
                       </p>
