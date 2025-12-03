@@ -642,67 +642,6 @@ export const FileSharingHub = () => {
                 </div>
               </div>
             )}
-
-            {/* Upload Preview Modal */}
-            {showUploadPreview && selectedFiles && (
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-                <div className="glass rounded-xl p-6 max-w-md w-full mx-4">
-                  <h3 className="text-lg font-medium mb-4">Confirm Upload</h3>
-                  <div className="space-y-3 mb-6">
-                    <p className="text-sm opacity-70">
-                      Ready to upload {selectedFiles.length} file(s):
-                    </p>
-                    <div className="max-h-40 overflow-y-auto space-y-2">
-                      {Array.from(selectedFiles).map((file, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-2 text-sm"
-                        >
-                          <FileIcon className="w-4 h-4" />
-                          <span className="truncate">{file.name}</span>
-                          <span className="text-xs opacity-50">
-                            ({Math.round(file.size / 1024)}KB)
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-xs opacity-60">
-                      After uploading, you can share these files with team
-                      members by clicking on them.
-                    </p>
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => {
-                        setShowUploadPreview(false);
-                        setSelectedFiles(null);
-                      }}
-                      className="btn-ghost flex-1"
-                      disabled={isUploading}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleConfirmUpload}
-                      className="btn-primary flex-1"
-                      disabled={isUploading}
-                    >
-                      {isUploading ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-4 h-4" />
-                          Upload
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
