@@ -13,6 +13,7 @@ import { TaskManagement } from "./components/admin/TaskManagement";
 import { FileSharingHub } from "./components/files/FileSharingHub";
 import { CalendarView } from "./components/calendar/Calendar";
 import { Profile } from "./components/profile/Profile";
+import { Settings } from "./components/settings/Settings";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 function AppContent() {
@@ -155,6 +156,16 @@ function AppContent() {
         element={
           <DashboardLayout>
             <Profile />
+          </DashboardLayout>
+        }
+      />
+
+      {/* Settings Route - Available to all authenticated users */}
+      <Route
+        path="/settings"
+        element={
+          <DashboardLayout>
+            <Settings />
           </DashboardLayout>
         }
       />

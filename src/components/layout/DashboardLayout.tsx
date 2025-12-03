@@ -10,6 +10,7 @@ import {
   Share2,
   Calendar,
   UserCircle,
+  Settings,
 } from "lucide-react";
 import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -84,6 +85,12 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       icon: UserCircle,
       label: "Profile",
       path: "/profile",
+      roles: ["ADMIN", "MANAGER", "DEVELOPER"],
+    },
+    {
+      icon: Settings,
+      label: "Settings",
+      path: "/settings",
       roles: ["ADMIN", "MANAGER", "DEVELOPER"],
     },
   ];
@@ -165,7 +172,11 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
         {/* User Section */}
         <div className="p-4 border-t border-white/10 flex-shrink-0">
-          <div className="glass rounded-lg p-3">
+          <button
+            onClick={() => navigate("/profile")}
+            className="w-full glass rounded-lg p-3 hover:border-[var(--brand)] hover:border transition-all text-left cursor-pointer"
+            title="View Profile"
+          >
             {isSidebarOpen ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
@@ -195,25 +206,24 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   >
                     {user?.role}
                   </span>
-                  <button
-                    onClick={handleSignOut}
-                    className="neo-icon w-8 h-8 flex items-center justify-center rounded-lg hover:opacity-80 transition"
-                    title="Sign out"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
                 </div>
               </div>
             ) : (
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center justify-center"
-                title="Sign out"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
+              <div className="flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  {user?.profile_photo_url ? (
+                    <img
+                      src={user.profile_photo_url}
+                      alt={user.username}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-4 h-4 text-white" />
+                  )}
+                </div>
+              </div>
             )}
-          </div>
+          </button>
         </div>
 
         {/* Toggle Button */}
@@ -292,7 +302,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </nav>
 
             <div className="p-4 border-t border-white/10 flex-shrink-0">
-              <div className="glass rounded-lg p-3 space-y-3">
+              <button
+                onClick={() => {
+                  navigate("/profile");
+                  setIsMobileMenuOpen(false);
+                }}
+                className="w-full glass rounded-lg p-3 hover:border-[var(--brand)] hover:border transition-all cursor-pointer"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
                     {user?.profile_photo_url ? (
@@ -305,24 +321,14 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                       <User className="w-5 h-5 text-white" />
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 text-left">
                     <p className="text-sm font-medium truncate">
                       {user?.username}
                     </p>
                     <p className="text-xs opacity-70 truncate">{user?.email}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    handleSignOut();
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full btn-ghost justify-center"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Sign Out</span>
-                </button>
-              </div>
+              </button>
             </div>
           </aside>
         </div>
