@@ -99,7 +99,6 @@ export interface FileShare {
 
 class ApiClient {
   private token: string | null = null;
-  private baseURL: string = API_BASE_URL;
 
   constructor() {
     // Initialize token from localStorage
