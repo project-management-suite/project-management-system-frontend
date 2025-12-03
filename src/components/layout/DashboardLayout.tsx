@@ -1,5 +1,16 @@
 import { useAuth } from "../../contexts/AuthContext";
-import { LogOut, User, LayoutDashboard, Users, FolderKanban, Settings, Menu, X, CheckSquare } from "lucide-react";
+import {
+  LogOut,
+  User,
+  LayoutDashboard,
+  Users,
+  FolderKanban,
+  Settings,
+  Menu,
+  X,
+  CheckSquare,
+  Share2,
+} from "lucide-react";
 import { ReactNode, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import mainIco from "../../assets/icons/main-ico.svg";
@@ -50,7 +61,12 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       path: "/admin/projects",
       roles: ["ADMIN", "MANAGER"],
     },
-
+    {
+      icon: Share2,
+      label: "File Sharing",
+      path: "/file-sharing",
+      roles: ["ADMIN", "MANAGER", "DEVELOPER"],
+    },
   ];
 
   const filteredNavItems = navigationItems.filter((item) =>
@@ -84,7 +100,10 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       >
         {/* Logo */}
         <div className="p-5 border-b border-white/10 flex-shrink-0">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/dashboard")}>
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => navigate("/dashboard")}
+          >
             <div className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg">
               <img src={mainIco} alt="Neutral logo" className="w-5 h-5" />
             </div>
@@ -103,18 +122,20 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  isActive
-                    ? "glass border border-white/20"
-                    : "hover:glass-soft"
+                  isActive ? "glass border border-white/20" : "hover:glass-soft"
                 }`}
                 title={!isSidebarOpen ? item.label : undefined}
               >
-                <item.icon 
-                  className="w-5 h-5 flex-shrink-0" 
-                  style={{ color: isActive ? "var(--brand)" : "inherit" }} 
+                <item.icon
+                  className="w-5 h-5 flex-shrink-0"
+                  style={{ color: isActive ? "var(--brand)" : "inherit" }}
                 />
                 {isSidebarOpen && (
-                  <span className={`text-sm font-medium ${isActive ? "opacity-100" : "opacity-70"}`}>
+                  <span
+                    className={`text-sm font-medium ${
+                      isActive ? "opacity-100" : "opacity-70"
+                    }`}
+                  >
                     {item.label}
                   </span>
                 )}
@@ -191,10 +212,13 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           />
           <aside className="absolute left-0 top-0 h-screen w-64 glass border-r border-white/10 animate-slide-in-left flex flex-col">
             <div className="p-5 border-b border-white/10 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-3 cursor-pointer" onClick={() => {
-                navigate("/dashboard");
-                setIsMobileMenuOpen(false);
-              }}>
+              <div
+                className="flex items-center gap-3 cursor-pointer"
+                onClick={() => {
+                  navigate("/dashboard");
+                  setIsMobileMenuOpen(false);
+                }}
+              >
                 <div className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg">
                   <img src={mainIco} alt="Neutral logo" className="w-5 h-5" />
                 </div>
@@ -224,11 +248,15 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                         : "hover:glass-soft"
                     }`}
                   >
-                    <item.icon 
-                      className="w-5 h-5" 
-                      style={{ color: isActive ? "var(--brand)" : "inherit" }} 
+                    <item.icon
+                      className="w-5 h-5"
+                      style={{ color: isActive ? "var(--brand)" : "inherit" }}
                     />
-                    <span className={`text-sm font-medium ${isActive ? "opacity-100" : "opacity-70"}`}>
+                    <span
+                      className={`text-sm font-medium ${
+                        isActive ? "opacity-100" : "opacity-70"
+                      }`}
+                    >
                       {item.label}
                     </span>
                   </button>
@@ -283,9 +311,8 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
             <div className="flex-1 lg:flex-none">
               <h1 className="text-xl font-semibold">
-                {filteredNavItems.find(
-                  (item) => isActivePath(item.path)
-                )?.label || "Dashboard"}
+                {filteredNavItems.find((item) => isActivePath(item.path))
+                  ?.label || "Dashboard"}
               </h1>
             </div>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { apiClient, File, FileShare, User } from "../../lib/api";
+import { apiClient, File, FileShare, User, Project } from "../../lib/api";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   Share2,
   Users,
@@ -7,13 +8,11 @@ import {
   Check,
   Plus,
   Trash2,
-  Eye,
-  Edit3,
-  Shield,
-  UserCheck,
-  Crown,
+  Download,
   Search,
   Send,
+  Building2,
+  Shield,
 } from "lucide-react";
 
 interface FileSharingProps {
@@ -24,7 +23,11 @@ interface FileSharingProps {
 
 interface ShareFormData {
   userId: string;
-  permissionLevel: "read" | "write" | "admin";
+  teamId?: string;
+}
+
+interface TeamWithMembers extends Project {
+  member_count: number;
 }
 
 export const FileSharing = ({
@@ -32,23 +35,43 @@ export const FileSharing = ({
   onClose,
   onShareUpdate,
 }: FileSharingProps) => {
+  const { user } = useAuth();
   const [shares, setShares] = useState<FileShare[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [userTeams, setUserTeams] = useState<Project[]>([]);
+  const [allTeams, setAllTeams] = useState<TeamWithMembers[]>([]);
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [formData, setFormData] = useState<ShareFormData>({
     userId: "",
-    permissionLevel: "read",
+    teamId: "",
   });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchFileShares();
     fetchUsers();
+    fetchTeamsData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [file.file_id]);
+
+  const fetchTeamsData = async () => {
+    try {
+      // Fetch user's teams/projects
+      const userProjectsResult = await apiClient.getUserProjects();
+      setUserTeams(userProjectsResult.projects || []);
+
+      // Fetch all teams if user is admin or manager
+      if (user?.role === "ADMIN" || user?.role === "MANAGER") {
+        const allTeamsResult = await apiClient.getAllTeams();
+        setAllTeams(allTeamsResult.teams || []);
+      }
+    } catch (error) {
+      console.error("Error fetching teams data:", error);
+    }
+  };
 
   const fetchFileShares = async () => {
     try {
@@ -90,15 +113,11 @@ export const FileSharing = ({
     setError(null);
 
     try {
-      const result = await apiClient.shareFile(
-        file.file_id,
-        formData.userId,
-        formData.permissionLevel
-      );
+      const result = await apiClient.shareFile(file.file_id, formData.userId);
 
       if (result.success) {
         setShares((prev) => [...prev, result.share]);
-        setFormData({ userId: "", permissionLevel: "read" });
+        setFormData({ userId: "", teamId: "" });
         setShowAddForm(false);
         onShareUpdate?.();
       }
@@ -110,16 +129,14 @@ export const FileSharing = ({
     }
   };
 
-  const handleShareWithTeam = async (
-    permissionLevel: "read" | "write" | "admin" = "read"
-  ) => {
+  const handleShareWithTeam = async (projectId?: string) => {
     setSharing(true);
     setError(null);
 
     try {
       const result = await apiClient.shareWithProjectTeam(
         file.file_id,
-        permissionLevel
+        projectId
       );
 
       if (result.success) {
@@ -133,34 +150,6 @@ export const FileSharing = ({
       );
     } finally {
       setSharing(false);
-    }
-  };
-
-  const handleUpdatePermission = async (
-    shareId: string,
-    newPermission: "read" | "write" | "admin"
-  ) => {
-    try {
-      const result = await apiClient.updateSharePermission(
-        shareId,
-        newPermission
-      );
-
-      if (result.success) {
-        setShares((prev) =>
-          prev.map((share) =>
-            share.share_id === shareId
-              ? { ...share, permission_level: newPermission }
-              : share
-          )
-        );
-        onShareUpdate?.();
-      }
-    } catch (error) {
-      console.error("Error updating permission:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to update permission"
-      );
     }
   };
 
@@ -178,32 +167,6 @@ export const FileSharing = ({
       setError(
         error instanceof Error ? error.message : "Failed to remove share"
       );
-    }
-  };
-
-  const getPermissionIcon = (permission: string) => {
-    switch (permission) {
-      case "read":
-        return <Eye className="w-4 h-4 text-blue-400" />;
-      case "write":
-        return <Edit3 className="w-4 h-4 text-green-400" />;
-      case "admin":
-        return <Crown className="w-4 h-4 text-yellow-400" />;
-      default:
-        return <Shield className="w-4 h-4 text-gray-400" />;
-    }
-  };
-
-  const getPermissionColor = (permission: string) => {
-    switch (permission) {
-      case "read":
-        return "bg-blue-500/20 text-blue-400";
-      case "write":
-        return "bg-green-500/20 text-green-400";
-      case "admin":
-        return "bg-yellow-500/20 text-yellow-400";
-      default:
-        return "bg-gray-500/20 text-gray-400";
     }
   };
 
@@ -250,23 +213,64 @@ export const FileSharing = ({
               <Users className="w-5 h-5 text-[var(--brand)]" />
               Quick Share
             </h3>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => handleShareWithTeam("read")}
-                disabled={sharing}
-                className="btn-ghost flex items-center gap-2 disabled:opacity-50"
-              >
-                <UserCheck className="w-4 h-4" />
-                Share with Project Team (Read)
-              </button>
-              <button
-                onClick={() => handleShareWithTeam("write")}
-                disabled={sharing}
-                className="btn-ghost flex items-center gap-2 disabled:opacity-50"
-              >
-                <Edit3 className="w-4 h-4" />
-                Share with Project Team (Write)
-              </button>
+            <div className="space-y-3">
+              {/* User's Teams */}
+              {userTeams.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-300 mb-2">
+                    My Teams:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {userTeams.map((team) => (
+                      <button
+                        key={team.project_id}
+                        onClick={() => handleShareWithTeam(team.project_id)}
+                        disabled={sharing}
+                        className="btn-ghost text-sm flex items-center gap-2 disabled:opacity-50"
+                      >
+                        <Building2 className="w-4 h-4" />
+                        {team.project_name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* All Teams for Admin/Manager */}
+              {(user?.role === "ADMIN" || user?.role === "MANAGER") &&
+                allTeams.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-300 mb-2">
+                      All Teams:
+                    </p>
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {allTeams.map((team) => (
+                        <button
+                          key={team.project_id}
+                          onClick={() => handleShareWithTeam(team.project_id)}
+                          disabled={sharing}
+                          className="w-full text-left p-2 rounded hover:bg-white/5 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                          <Building2 className="w-4 h-4" />
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">
+                              {team.project_name}
+                            </div>
+                            <div className="text-xs opacity-60">
+                              {team.member_count || 0} members
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {userTeams.length === 0 && allTeams.length === 0 && (
+                <p className="text-sm opacity-50">
+                  No teams available for quick sharing
+                </p>
+              )}
             </div>
           </div>
 
@@ -322,8 +326,13 @@ export const FileSharing = ({
                               : ""
                           }`}
                         >
-                          <div className="text-sm font-medium">
-                            {user.username}
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium">
+                              {user.username}
+                            </div>
+                            <span className="text-xs px-2 py-1 rounded-full bg-gray-500/20 text-gray-400">
+                              {user.role}
+                            </span>
                           </div>
                           <div className="text-xs opacity-60">{user.email}</div>
                         </button>
@@ -334,35 +343,12 @@ export const FileSharing = ({
                     </div>
                   )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Permission Level
-                    </label>
-                    <select
-                      value={formData.permissionLevel}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          permissionLevel: e.target.value as
-                            | "read"
-                            | "write"
-                            | "admin",
-                        })
-                      }
-                      className="select w-full"
-                    >
-                      <option value="read">Read Only</option>
-                      <option value="write">Read & Write</option>
-                      <option value="admin">Admin Access</option>
-                    </select>
-                  </div>
-
                   <div className="flex gap-3">
                     <button
                       type="button"
                       onClick={() => {
                         setShowAddForm(false);
-                        setFormData({ userId: "", permissionLevel: "read" });
+                        setFormData({ userId: "", teamId: "" });
                         setSearchQuery("");
                       }}
                       className="btn-ghost flex-1"
@@ -417,7 +403,7 @@ export const FileSharing = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="neo-icon w-10 h-10 flex items-center justify-center rounded-lg">
-                          {getPermissionIcon(share.permission_level)}
+                          <Download className="w-5 h-5 text-blue-400" />
                         </div>
                         <div>
                           <h4 className="font-medium">
@@ -435,22 +421,9 @@ export const FileSharing = ({
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <select
-                          value={share.permission_level}
-                          onChange={(e) =>
-                            handleUpdatePermission(
-                              share.share_id,
-                              e.target.value as "read" | "write" | "admin"
-                            )
-                          }
-                          className={`text-xs px-2 py-1 rounded-full font-medium border-none outline-none bg-transparent ${getPermissionColor(
-                            share.permission_level
-                          )}`}
-                        >
-                          <option value="read">Read</option>
-                          <option value="write">Write</option>
-                          <option value="admin">Admin</option>
-                        </select>
+                        <span className="text-xs px-2 py-1 rounded-full font-medium bg-blue-500/20 text-blue-400">
+                          Read
+                        </span>
 
                         <button
                           onClick={() => handleRemoveShare(share.share_id)}

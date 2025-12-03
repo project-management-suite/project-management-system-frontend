@@ -24,7 +24,6 @@ import {
 import { TaskForm } from "./TaskForm";
 import { FileUploader } from "../files/FileUploader";
 import { FileLibrary } from "../files/FileLibrary";
-import { FileSharing } from "../files/FileSharing";
 
 // Edit Project Modal Component
 const EditProjectModal = ({
@@ -439,7 +438,6 @@ export const TaskManager = ({
   const [currentDate, setCurrentDate] = useState(new Date());
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [showFileSharing, setShowFileSharing] = useState(false);
   const [showEditProject, setShowEditProject] = useState(false);
 
   const fetchTasks = async () => {
@@ -836,11 +834,6 @@ export const TaskManager = ({
     setSelectedFile(file);
   };
 
-  const handleShareFile = (file: File) => {
-    setSelectedFile(file);
-    setShowFileSharing(true);
-  };
-
   const handleFileUploadSuccess = () => {
     // Refresh file library by re-rendering
     if (currentView === "files") {
@@ -866,7 +859,6 @@ export const TaskManager = ({
             <FileLibrary
               projectId={project.project_id}
               onFileSelect={handleFileSelect}
-              onShareClick={handleShareFile}
             />
           </div>
         </div>
@@ -1005,20 +997,6 @@ export const TaskManager = ({
           onSuccess={() => {
             setShowEditProject(false);
             onBack(); // Go back to refresh the project list
-          }}
-        />
-      )}
-
-      {/* File Detail/Sharing Modals */}
-      {selectedFile && showFileSharing && (
-        <FileSharing
-          file={selectedFile}
-          onClose={() => {
-            setSelectedFile(null);
-            setShowFileSharing(false);
-          }}
-          onShareUpdate={() => {
-            // Could refresh file library here if needed
           }}
         />
       )}

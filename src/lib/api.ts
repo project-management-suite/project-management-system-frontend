@@ -99,6 +99,7 @@ export interface FileShare {
 
 class ApiClient {
   private token: string | null = null;
+  private baseURL: string = API_BASE_URL;
 
   constructor() {
     // Initialize token from localStorage
@@ -112,6 +113,10 @@ class ApiClient {
     } else {
       localStorage.removeItem("token");
     }
+  }
+
+  getToken(): string | null {
+    return this.token;
   }
 
   private async request(endpoint: string, options: RequestInit = {}) {
@@ -267,6 +272,19 @@ class ApiClient {
     return this.request(`/projects/${projectId}/members`);
   }
 
+  async getUserProjects(): Promise<{
+    projects: Array<
+      Project & {
+        role?: string;
+        membership?: {
+          role: "MEMBER" | "LEAD";
+        };
+      }
+    >;
+  }> {
+    return this.request("/projects");
+  }
+
   async removeProjectMember(
     projectId: string,
     memberId: string
@@ -389,6 +407,16 @@ class ApiClient {
     return this.request(endpoint);
   }
 
+  async getAllTeams(): Promise<{
+    teams: Array<
+      Project & {
+        member_count: number;
+      }
+    >;
+  }> {
+    return this.request("/projects");
+  }
+
   // Dashboard endpoint
   async getDashboard(): Promise<{ projects: Project[]; tasks: Task[] }> {
     return this.request("/projects/dashboard");
@@ -447,6 +475,44 @@ class ApiClient {
     return this.requestFormData(`/files/project/${projectId}/upload`, formData);
   }
 
+  // Standalone file upload for sharing (not tied to a project)
+  async uploadFileStandalone(
+    formData: FormData,
+    onProgress?: (progress: number) => void
+  ): Promise<{ success: boolean; file: File }> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          const progress = (event.loaded / event.total) * 100;
+          onProgress(progress);
+        }
+      };
+
+      xhr.onload = () => {
+        try {
+          const response = JSON.parse(xhr.responseText);
+          if (xhr.status === 200) {
+            resolve(response);
+          } else {
+            reject(new Error(response.error || "Upload failed"));
+          }
+        } catch (error) {
+          reject(new Error("Failed to parse response"));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network error"));
+
+      xhr.open("POST", `${API_BASE_URL}/files/upload-standalone`);
+      if (this.token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${this.token}`);
+      }
+      xhr.send(formData);
+    });
+  }
+
   async getProjectFiles(
     projectId: string
   ): Promise<{ success: boolean; files: File[] }> {
@@ -482,18 +548,23 @@ class ApiClient {
     return this.request(`/files/project/${projectId}/stats`);
   }
 
+  async downloadFile(
+    fileId: string
+  ): Promise<{ success: boolean; download_url: string; downloadUrl?: string }> {
+    return this.request(`/files/${fileId}/download`);
+  }
+
   // File Sharing endpoints
   async shareFile(
     fileId: string,
-    sharedWithUserId: string,
-    permissionLevel: "read" | "write" | "admin" = "read"
+    sharedWithUserId: string
   ): Promise<{ success: boolean; share: FileShare }> {
     return this.request("/file-shares", {
       method: "POST",
       body: JSON.stringify({
         file_id: fileId,
         shared_with_user_id: sharedWithUserId,
-        permission_level: permissionLevel,
+        permission_level: "read",
       }),
     });
   }
@@ -518,7 +589,7 @@ class ApiClient {
     offset: number = 0,
     permissionLevel?: string,
     mimeTypeFilter?: string
-  ): Promise<{ success: boolean; files: FileShare[] }> {
+  ): Promise<{ success: boolean; shares: FileShare[] }> {
     const params = new URLSearchParams({
       limit: limit.toString(),
       offset: offset.toString(),
@@ -540,6 +611,11 @@ class ApiClient {
     });
 
     return this.request(`/file-shares/shared-by-me?${params}`);
+  }
+
+  // Get user's own standalone files (for the upload & share view)
+  async getUserStandaloneFiles(): Promise<{ success: boolean; files: File[] }> {
+    return this.request("/files/my-standalone");
   }
 
   async getFileShares(
@@ -577,11 +653,11 @@ class ApiClient {
 
   async shareWithProjectTeam(
     fileId: string,
-    permissionLevel: "read" | "write" | "admin" = "read"
+    projectId?: string
   ): Promise<{ success: boolean; shares: FileShare[] }> {
     return this.request(`/file-shares/file/${fileId}/share-with-team`, {
       method: "POST",
-      body: JSON.stringify({ permission_level: permissionLevel }),
+      body: JSON.stringify({ project_id: projectId }),
     });
   }
 

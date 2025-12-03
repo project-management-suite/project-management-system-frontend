@@ -67,7 +67,7 @@ export const FileLibrary = ({
           result = await apiClient.getSharedWithMe(50, 0);
           // Extract files from shares for shared files and filter out null/undefined files
           const sharedFiles =
-            result.files
+            result.shares
               ?.map((share) => share.file)
               .filter((file): file is File => Boolean(file)) || [];
           setFiles(sharedFiles);
@@ -376,7 +376,7 @@ export const FileLibrary = ({
                     <Eye className="w-4 h-4" />
                   </button>
 
-                  {onShareClick && (
+                  {!showSharedFiles && onShareClick && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

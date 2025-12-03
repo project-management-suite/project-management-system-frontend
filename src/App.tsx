@@ -10,6 +10,7 @@ import { DashboardLayout } from "./components/layout/DashboardLayout";
 import { UserManagement } from "./components/admin/UserManagement";
 import { ProjectManagement } from "./components/admin/ProjectManagement";
 import { TaskManagement } from "./components/admin/TaskManagement";
+import { FileSharingHub } from "./components/files/FileSharingHub";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 function AppContent() {
@@ -125,6 +126,16 @@ function AppContent() {
           }
         />
       )}
+
+      {/* File Sharing Route - Available to all authenticated users */}
+      <Route
+        path="/file-sharing"
+        element={
+          <DashboardLayout>
+            <FileSharingHub />
+          </DashboardLayout>
+        }
+      />
 
       {/* Catch all - redirect to dashboard */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
