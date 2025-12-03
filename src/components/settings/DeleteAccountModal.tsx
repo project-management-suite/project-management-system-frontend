@@ -19,6 +19,8 @@ export default function DeleteAccountModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
   const handleClose = () => {
     if (!loading) {
@@ -46,6 +48,24 @@ export default function DeleteAccountModal({
       setError(err.message || "Failed to send deletion OTP");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    if (resendLoading) return;
+
+    try {
+      setResendLoading(true);
+      setResendMessage("");
+      setError("");
+
+      await apiClient.post("/auth/delete-account/resend");
+      setResendMessage("OTP resent to your email");
+      setTimeout(() => setResendMessage(""), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to resend OTP");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -182,15 +202,31 @@ export default function DeleteAccountModal({
             <form onSubmit={handleConfirmDeletion} className="space-y-4">
               {/* OTP Info */}
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
-                <p className="text-blue-400 text-sm flex items-center gap-2 mb-2">
-                  <Mail className="w-4 h-4" />
-                  <strong>OTP sent to {email}</strong>
-                </p>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <p className="text-blue-400 text-sm flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    <strong>OTP sent to {email}</strong>
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleResendOTP}
+                    disabled={resendLoading || loading}
+                    className="text-blue-400 text-xs hover:text-blue-300 underline disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  >
+                    {resendLoading ? "Sending..." : "Resend OTP"}
+                  </button>
+                </div>
                 <p className="text-gray-400 text-sm">
                   Please check your email and enter the 6-digit code below to
                   confirm account deletion. The OTP will expire in 10 minutes.
                 </p>
               </div>
+
+              {resendMessage && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                  <p className="text-green-400 text-sm">{resendMessage}</p>
+                </div>
+              )}
 
               {/* OTP Input */}
               <div>
