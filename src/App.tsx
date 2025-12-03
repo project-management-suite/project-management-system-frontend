@@ -14,6 +14,8 @@ import { FileSharingHub } from "./components/files/FileSharingHub";
 import { CalendarView } from "./components/calendar/Calendar";
 import { Profile } from "./components/profile/Profile";
 import { Settings } from "./components/settings/Settings";
+import { TaskDetailPage } from "./components/tasks/TaskDetailPage";
+import ManagerAnalytics from "./components/manager/ManagerAnalytics";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 function AppContent() {
@@ -120,14 +122,24 @@ function AppContent() {
 
       {/* Manager Routes */}
       {(user.role === "ADMIN" || user.role === "MANAGER") && (
-        <Route
-          path="/manager/projects"
-          element={
-            <DashboardLayout>
-              <ProjectManagement />
-            </DashboardLayout>
-          }
-        />
+        <>
+          <Route
+            path="/manager/projects"
+            element={
+              <DashboardLayout>
+                <ProjectManagement />
+              </DashboardLayout>
+            }
+          />
+          <Route
+            path="/manager/analytics"
+            element={
+              <DashboardLayout>
+                <ManagerAnalytics />
+              </DashboardLayout>
+            }
+          />
+        </>
       )}
 
       {/* File Sharing Route - Available to all authenticated users */}
@@ -166,6 +178,16 @@ function AppContent() {
         element={
           <DashboardLayout>
             <Settings />
+          </DashboardLayout>
+        }
+      />
+
+      {/* Task Detail Route - Available to all authenticated users */}
+      <Route
+        path="/tasks/:taskId"
+        element={
+          <DashboardLayout>
+            <TaskDetailPage />
           </DashboardLayout>
         }
       />

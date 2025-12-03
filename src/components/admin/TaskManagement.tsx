@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiClient, Task, Project } from "../../lib/api";
 import {
   CheckSquare,
@@ -16,6 +17,7 @@ import {
   Clock,
   FolderKanban,
   Users,
+  Eye,
 } from "lucide-react";
 
 interface TaskStats {
@@ -36,6 +38,7 @@ interface User {
 }
 
 export const TaskManagement = () => {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [developers, setDevelopers] = useState<User[]>([]);
@@ -66,7 +69,9 @@ export const TaskManagement = () => {
       ]);
 
       setProjects(projectsRes.projects || []);
-      setDevelopers(usersRes.users?.filter((u: User) => u.role === "DEVELOPER") || []);
+      setDevelopers(
+        usersRes.users?.filter((u: User) => u.role === "DEVELOPER") || []
+      );
 
       // Fetch all tasks from all projects
       const allTasks: Task[] = [];
@@ -75,7 +80,10 @@ export const TaskManagement = () => {
           const tasksRes = await apiClient.getProjectTasks(project.project_id);
           allTasks.push(...(tasksRes.tasks || []));
         } catch (error) {
-          console.error(`Error fetching tasks for project ${project.project_id}:`, error);
+          console.error(
+            `Error fetching tasks for project ${project.project_id}:`,
+            error
+          );
         }
       }
 
@@ -85,10 +93,11 @@ export const TaskManagement = () => {
       const stats: TaskStats = {
         total: allTasks.length,
         byStatus: {
-          NEW: allTasks.filter(t => t.status === "NEW").length,
-          ASSIGNED: allTasks.filter(t => t.status === "ASSIGNED").length,
-          IN_PROGRESS: allTasks.filter(t => t.status === "IN_PROGRESS").length,
-          COMPLETED: allTasks.filter(t => t.status === "COMPLETED").length,
+          NEW: allTasks.filter((t) => t.status === "NEW").length,
+          ASSIGNED: allTasks.filter((t) => t.status === "ASSIGNED").length,
+          IN_PROGRESS: allTasks.filter((t) => t.status === "IN_PROGRESS")
+            .length,
+          COMPLETED: allTasks.filter((t) => t.status === "COMPLETED").length,
         },
       };
       setStats(stats);
@@ -138,13 +147,18 @@ export const TaskManagement = () => {
     const matchesSearch =
       task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "ALL" || task.status === statusFilter;
-    const matchesProject = projectFilter === "ALL" || task.project_id === projectFilter;
+    const matchesStatus =
+      statusFilter === "ALL" || task.status === statusFilter;
+    const matchesProject =
+      projectFilter === "ALL" || task.project_id === projectFilter;
     return matchesSearch && matchesStatus && matchesProject;
   });
 
   const getProjectName = (projectId: string) => {
-    return projects.find(p => p.project_id === projectId)?.project_name || "Unknown Project";
+    return (
+      projects.find((p) => p.project_id === projectId)?.project_name ||
+      "Unknown Project"
+    );
   };
 
   if (loading) {
@@ -153,7 +167,10 @@ export const TaskManagement = () => {
         <div className="glass rounded-xl p-8">
           <div className="flex flex-col items-center gap-4">
             <div className="animate-spin neo-icon w-16 h-16 flex items-center justify-center rounded-lg">
-              <CheckSquare className="w-8 h-8" style={{ color: "var(--brand)" }} />
+              <CheckSquare
+                className="w-8 h-8"
+                style={{ color: "var(--brand)" }}
+              />
             </div>
             <div className="text-lg opacity-70">Loading tasks...</div>
           </div>
@@ -189,7 +206,10 @@ export const TaskManagement = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="neo-icon w-14 h-14 flex items-center justify-center rounded-xl">
-              <CheckSquare className="w-7 h-7" style={{ color: "var(--brand)" }} />
+              <CheckSquare
+                className="w-7 h-7"
+                style={{ color: "var(--brand)" }}
+              />
             </div>
             <div>
               <h1 className="text-2xl font-bold">Task Management</h1>
@@ -223,7 +243,10 @@ export const TaskManagement = () => {
         <div className="glass rounded-xl p-6 hover:glass-soft transition-all">
           <div className="flex items-center justify-between mb-4">
             <div className="neo-icon w-12 h-12 flex items-center justify-center rounded-lg">
-              <CheckSquare className="w-6 h-6" style={{ color: "var(--brand)" }} />
+              <CheckSquare
+                className="w-6 h-6"
+                style={{ color: "var(--brand)" }}
+              />
             </div>
             <TrendingUp className="w-5 h-5 opacity-50" />
           </div>
@@ -233,17 +256,25 @@ export const TaskManagement = () => {
 
         <div
           className="glass rounded-xl p-6 hover:glass-soft transition-all cursor-pointer"
-          onClick={() => setStatusFilter(statusFilter === "NEW" ? "ALL" : "NEW")}
+          onClick={() =>
+            setStatusFilter(statusFilter === "NEW" ? "ALL" : "NEW")
+          }
         >
           <div className="flex items-center justify-between mb-4">
             <div className="neo-icon w-12 h-12 flex items-center justify-center rounded-lg">
               <Clock className="w-6 h-6" style={{ color: "var(--brand)" }} />
             </div>
           </div>
-          <h3 className="text-3xl font-bold mb-1">{stats?.byStatus.NEW || 0}</h3>
+          <h3 className="text-3xl font-bold mb-1">
+            {stats?.byStatus.NEW || 0}
+          </h3>
           <p className="text-sm opacity-70 mb-3">New Tasks</p>
           <div className="pt-3 border-t border-white/10">
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor("NEW")}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                "NEW"
+              )}`}
+            >
               NEW
             </span>
           </div>
@@ -251,17 +282,25 @@ export const TaskManagement = () => {
 
         <div
           className="glass rounded-xl p-6 hover:glass-soft transition-all cursor-pointer"
-          onClick={() => setStatusFilter(statusFilter === "ASSIGNED" ? "ALL" : "ASSIGNED")}
+          onClick={() =>
+            setStatusFilter(statusFilter === "ASSIGNED" ? "ALL" : "ASSIGNED")
+          }
         >
           <div className="flex items-center justify-between mb-4">
             <div className="neo-icon w-12 h-12 flex items-center justify-center rounded-lg">
               <User className="w-6 h-6" style={{ color: "var(--brand)" }} />
             </div>
           </div>
-          <h3 className="text-3xl font-bold mb-1">{stats?.byStatus.ASSIGNED || 0}</h3>
+          <h3 className="text-3xl font-bold mb-1">
+            {stats?.byStatus.ASSIGNED || 0}
+          </h3>
           <p className="text-sm opacity-70 mb-3">Assigned</p>
           <div className="pt-3 border-t border-white/10">
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor("ASSIGNED")}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                "ASSIGNED"
+              )}`}
+            >
               ASSIGNED
             </span>
           </div>
@@ -269,17 +308,30 @@ export const TaskManagement = () => {
 
         <div
           className="glass rounded-xl p-6 hover:glass-soft transition-all cursor-pointer"
-          onClick={() => setStatusFilter(statusFilter === "IN_PROGRESS" ? "ALL" : "IN_PROGRESS")}
+          onClick={() =>
+            setStatusFilter(
+              statusFilter === "IN_PROGRESS" ? "ALL" : "IN_PROGRESS"
+            )
+          }
         >
           <div className="flex items-center justify-between mb-4">
             <div className="neo-icon w-12 h-12 flex items-center justify-center rounded-lg">
-              <TrendingUp className="w-6 h-6" style={{ color: "var(--brand)" }} />
+              <TrendingUp
+                className="w-6 h-6"
+                style={{ color: "var(--brand)" }}
+              />
             </div>
           </div>
-          <h3 className="text-3xl font-bold mb-1">{stats?.byStatus.IN_PROGRESS || 0}</h3>
+          <h3 className="text-3xl font-bold mb-1">
+            {stats?.byStatus.IN_PROGRESS || 0}
+          </h3>
           <p className="text-sm opacity-70 mb-3">In Progress</p>
           <div className="pt-3 border-t border-white/10">
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor("IN_PROGRESS")}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                "IN_PROGRESS"
+              )}`}
+            >
               IN PROGRESS
             </span>
           </div>
@@ -287,17 +339,28 @@ export const TaskManagement = () => {
 
         <div
           className="glass rounded-xl p-6 hover:glass-soft transition-all cursor-pointer"
-          onClick={() => setStatusFilter(statusFilter === "COMPLETED" ? "ALL" : "COMPLETED")}
+          onClick={() =>
+            setStatusFilter(statusFilter === "COMPLETED" ? "ALL" : "COMPLETED")
+          }
         >
           <div className="flex items-center justify-between mb-4">
             <div className="neo-icon w-12 h-12 flex items-center justify-center rounded-lg">
-              <CheckCircle className="w-6 h-6" style={{ color: "var(--brand)" }} />
+              <CheckCircle
+                className="w-6 h-6"
+                style={{ color: "var(--brand)" }}
+              />
             </div>
           </div>
-          <h3 className="text-3xl font-bold mb-1">{stats?.byStatus.COMPLETED || 0}</h3>
+          <h3 className="text-3xl font-bold mb-1">
+            {stats?.byStatus.COMPLETED || 0}
+          </h3>
           <p className="text-sm opacity-70 mb-3">Completed</p>
           <div className="pt-3 border-t border-white/10">
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor("COMPLETED")}`}>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                "COMPLETED"
+              )}`}
+            >
               COMPLETED
             </span>
           </div>
@@ -383,24 +446,41 @@ export const TaskManagement = () => {
                 ? "Try adjusting your filters"
                 : "Create your first task to get started"}
             </p>
-            {!searchTerm && statusFilter === "ALL" && projectFilter === "ALL" && (
-              <button onClick={() => setShowCreateModal(true)} className="btn-primary">
-                <Plus className="w-4 h-4" />
-                Create Task
-              </button>
-            )}
+            {!searchTerm &&
+              statusFilter === "ALL" &&
+              projectFilter === "ALL" && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="btn-primary"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Task
+                </button>
+              )}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-white/10">
-                  <th className="text-left p-4 text-sm font-medium opacity-70">Task</th>
-                  <th className="text-left p-4 text-sm font-medium opacity-70">Project</th>
-                  <th className="text-left p-4 text-sm font-medium opacity-70">Status</th>
-                  <th className="text-left p-4 text-sm font-medium opacity-70">Timeline</th>
-                  <th className="text-left p-4 text-sm font-medium opacity-70">Assigned To</th>
-                  <th className="text-right p-4 text-sm font-medium opacity-70">Actions</th>
+                  <th className="text-left p-4 text-sm font-medium opacity-70">
+                    Task
+                  </th>
+                  <th className="text-left p-4 text-sm font-medium opacity-70">
+                    Project
+                  </th>
+                  <th className="text-left p-4 text-sm font-medium opacity-70">
+                    Status
+                  </th>
+                  <th className="text-left p-4 text-sm font-medium opacity-70">
+                    Timeline
+                  </th>
+                  <th className="text-left p-4 text-sm font-medium opacity-70">
+                    Assigned To
+                  </th>
+                  <th className="text-right p-4 text-sm font-medium opacity-70">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -420,11 +500,17 @@ export const TaskManagement = () => {
                     <td className="p-4">
                       <div className="flex items-center gap-2">
                         <FolderKanban className="w-4 h-4 opacity-50" />
-                        <span className="text-sm opacity-70">{getProjectName(task.project_id)}</span>
+                        <span className="text-sm opacity-70">
+                          {getProjectName(task.project_id)}
+                        </span>
                       </div>
                     </td>
                     <td className="p-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(task.status)}`}>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(
+                          task.status
+                        )}`}
+                      >
                         {task.status}
                       </span>
                     </td>
@@ -432,7 +518,10 @@ export const TaskManagement = () => {
                       <div className="text-xs opacity-70">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          {new Date(task.start_date).toLocaleDateString()} - {new Date(task.end_date).toLocaleDateString()}
+                          {new Date(
+                            task.start_date
+                          ).toLocaleDateString()} -{" "}
+                          {new Date(task.end_date).toLocaleDateString()}
                         </div>
                       </div>
                     </td>
@@ -448,6 +537,13 @@ export const TaskManagement = () => {
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-2">
                         <button
+                          onClick={() => navigate(`/tasks/${task.task_id}`)}
+                          className="neo-icon w-9 h-9 rounded-lg flex items-center justify-center hover:opacity-80 transition"
+                          title="View details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => setEditingTask(task)}
                           className="neo-icon w-9 h-9 rounded-lg flex items-center justify-center hover:opacity-80 transition"
                           title="Edit task"
@@ -459,7 +555,10 @@ export const TaskManagement = () => {
                           className="neo-icon w-9 h-9 rounded-lg flex items-center justify-center hover:opacity-80 transition"
                           title="Delete task"
                         >
-                          <Trash2 className="w-4 h-4" style={{ color: "var(--brand)" }} />
+                          <Trash2
+                            className="w-4 h-4"
+                            style={{ color: "var(--brand)" }}
+                          />
                         </button>
                       </div>
                     </td>
@@ -486,7 +585,9 @@ export const TaskManagement = () => {
             fetchData();
             showNotification(
               "success",
-              editingTask ? "Task updated successfully" : "Task created successfully"
+              editingTask
+                ? "Task updated successfully"
+                : "Task created successfully"
             );
           }}
         />
@@ -523,8 +624,10 @@ export const TaskManagement = () => {
 
             <p className="text-sm opacity-70 mb-6">
               Are you sure you want to delete{" "}
-              <span className="font-medium text-white">{deletingTask.title}</span>?
-              This action cannot be undone.
+              <span className="font-medium text-white">
+                {deletingTask.title}
+              </span>
+              ? This action cannot be undone.
             </p>
 
             <div className="glass-soft rounded-lg p-4 mb-6">
@@ -532,7 +635,9 @@ export const TaskManagement = () => {
                 <CheckSquare className="w-5 h-5 opacity-70" />
                 <div>
                   <div className="font-medium">{deletingTask.title}</div>
-                  <div className="text-xs opacity-70">{getProjectName(deletingTask.project_id)}</div>
+                  <div className="text-xs opacity-70">
+                    {getProjectName(deletingTask.project_id)}
+                  </div>
                 </div>
               </div>
             </div>
@@ -619,12 +724,19 @@ interface TaskFormModalProps {
   onSuccess: () => void;
 }
 
-const TaskFormModal = ({ task, projects, onClose, onSuccess }: TaskFormModalProps) => {
+const TaskFormModal = ({
+  task,
+  projects,
+  onClose,
+  onSuccess,
+}: TaskFormModalProps) => {
   const [projectId, setProjectId] = useState(task?.project_id || "");
   const [title, setTitle] = useState(task?.title || "");
   const [description, setDescription] = useState(task?.description || "");
   const [startDate, setStartDate] = useState(
-    task?.start_date ? new Date(task.start_date).toISOString().split("T")[0] : ""
+    task?.start_date
+      ? new Date(task.start_date).toISOString().split("T")[0]
+      : ""
   );
   const [endDate, setEndDate] = useState(
     task?.end_date ? new Date(task.end_date).toISOString().split("T")[0] : ""
@@ -668,11 +780,17 @@ const TaskFormModal = ({ task, projects, onClose, onSuccess }: TaskFormModalProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="glass rounded-xl p-6 w-full max-w-md relative z-10 animate-scale-in">
         <div className="flex items-center gap-3 mb-6">
           <div className="neo-icon w-12 h-12 flex items-center justify-center rounded-lg">
-            <CheckSquare className="w-6 h-6" style={{ color: "var(--brand)" }} />
+            <CheckSquare
+              className="w-6 h-6"
+              style={{ color: "var(--brand)" }}
+            />
           </div>
           <h3 className="text-xl font-bold">
             {task ? "Edit Task" : "Create New Task"}
@@ -718,7 +836,9 @@ const TaskFormModal = ({ task, projects, onClose, onSuccess }: TaskFormModalProp
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">Description</label>
+            <label className="block text-sm font-medium mb-2">
+              Description
+            </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -730,7 +850,9 @@ const TaskFormModal = ({ task, projects, onClose, onSuccess }: TaskFormModalProp
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Start Date</label>
+              <label className="block text-sm font-medium mb-2">
+                Start Date
+              </label>
               <input
                 type="date"
                 value={startDate}
@@ -781,7 +903,12 @@ interface AssignDeveloperModalProps {
   onSuccess: () => void;
 }
 
-const AssignDeveloperModal = ({ task, developers, onClose, onSuccess }: AssignDeveloperModalProps) => {
+const AssignDeveloperModal = ({
+  task,
+  developers,
+  onClose,
+  onSuccess,
+}: AssignDeveloperModalProps) => {
   const [selectedDeveloper, setSelectedDeveloper] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -797,7 +924,9 @@ const AssignDeveloperModal = ({ task, developers, onClose, onSuccess }: AssignDe
       await apiClient.assignDeveloper(task.task_id, selectedDeveloper);
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to assign developer");
+      setError(
+        err instanceof Error ? err.message : "Failed to assign developer"
+      );
     } finally {
       setLoading(false);
     }
@@ -805,7 +934,10 @@ const AssignDeveloperModal = ({ task, developers, onClose, onSuccess }: AssignDe
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="glass rounded-xl p-6 w-full max-w-md relative z-10 animate-scale-in">
         <div className="flex items-center gap-3 mb-6">
           <div className="neo-icon w-12 h-12 flex items-center justify-center rounded-lg">
@@ -816,7 +948,9 @@ const AssignDeveloperModal = ({ task, developers, onClose, onSuccess }: AssignDe
 
         <div className="glass-soft rounded-lg p-4 mb-6">
           <div className="font-medium mb-1">{task.title}</div>
-          <div className="text-xs opacity-70">{task.description || "No description"}</div>
+          <div className="text-xs opacity-70">
+            {task.description || "No description"}
+          </div>
         </div>
 
         <form onSubmit={handleAssign} className="space-y-4">
@@ -827,7 +961,9 @@ const AssignDeveloperModal = ({ task, developers, onClose, onSuccess }: AssignDe
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-2">Select Developer</label>
+            <label className="block text-sm font-medium mb-2">
+              Select Developer
+            </label>
             <select
               value={selectedDeveloper}
               onChange={(e) => setSelectedDeveloper(e.target.value)}

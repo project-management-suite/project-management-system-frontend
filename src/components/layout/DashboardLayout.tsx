@@ -11,6 +11,7 @@ import {
   Calendar,
   UserCircle,
   Settings,
+  BarChart3,
 } from "lucide-react";
 import { ReactNode, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -56,6 +57,12 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       label: "Dashboard",
       path: "/dashboard",
       roles: ["ADMIN", "MANAGER", "DEVELOPER"],
+    },
+    {
+      icon: BarChart3,
+      label: "Analytics",
+      path: "/manager/analytics",
+      roles: ["ADMIN", "MANAGER"],
     },
     {
       icon: Calendar,

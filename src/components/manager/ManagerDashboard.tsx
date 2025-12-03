@@ -28,7 +28,9 @@ export const ManagerDashboard = () => {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [teams, setTeams] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<"projects" | "teams">("projects");
+  const [activeTab, setActiveTab] = useState<
+    "projects" | "teams" | "analytics"
+  >("projects");
   const [stats, setStats] = useState<DashboardStats>({
     totalProjects: 0,
     totalTasks: 0,

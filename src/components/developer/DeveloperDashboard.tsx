@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { apiClient, Task, File, Project } from "../../lib/api";
 import {
@@ -39,6 +40,7 @@ interface DashboardStats {
 
 export const DeveloperDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     totalTasks: 0,
@@ -219,15 +221,8 @@ export const DeveloperDashboard = () => {
   };
 
   const handleTaskClick = async (task: Task) => {
-    try {
-      // Fetch fresh task data from server
-      const freshTask = await apiClient.getTask(task.task_id);
-      setSelectedTask(freshTask);
-    } catch (error) {
-      console.error("Error fetching task details:", error);
-      // Fall back to cached task data if fetch fails
-      setSelectedTask(task);
-    }
+    // Navigate to task detail page
+    navigate(`/tasks/${task.task_id}`);
   };
 
   const getStatusIcon = (status: Task["status"]) => {

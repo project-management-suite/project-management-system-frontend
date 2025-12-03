@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Project, Task, apiClient, type User } from "../../lib/api";
 import {
   ArrowLeft,
@@ -452,6 +453,7 @@ export const TaskManager = ({
   onBack,
   onTaskUpdate,
 }: TaskManagerProps) => {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -619,15 +621,7 @@ export const TaskManager = ({
                   key={task.task_id}
                   draggable
                   onDragStart={() => handleDragStart(task)}
-                  onClick={async () => {
-                    try {
-                      const freshTask = await apiClient.getTask(task.task_id);
-                      setSelectedTask(freshTask);
-                    } catch (error) {
-                      console.error("Error fetching task:", error);
-                      setSelectedTask(task);
-                    }
-                  }}
+                  onClick={() => navigate(`/tasks/${task.task_id}`)}
                   className="bg-[var(--tile-dark)] p-4 rounded-lg hover:bg-white/5 transition-all cursor-pointer border border-white/5 hover:border-[var(--brand)]/30 group"
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -652,17 +646,9 @@ export const TaskManager = ({
                         <MessageSquare className="w-3 h-3 text-purple-400" />
                       </button>
                       <button
-                        onClick={async (e) => {
+                        onClick={(e) => {
                           e.stopPropagation();
-                          try {
-                            const freshTask = await apiClient.getTask(
-                              task.task_id
-                            );
-                            setSelectedTask(freshTask);
-                          } catch (error) {
-                            console.error("Error fetching task:", error);
-                            setSelectedTask(task);
-                          }
+                          navigate(`/tasks/${task.task_id}`);
                         }}
                         className="neo-icon w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--brand)]/20"
                         title="View Task"
@@ -805,17 +791,7 @@ export const TaskManager = ({
                       <MessageSquare className="w-4 h-4 text-purple-400" />
                     </button>
                     <button
-                      onClick={async () => {
-                        try {
-                          const freshTask = await apiClient.getTask(
-                            task.task_id
-                          );
-                          setSelectedTask(freshTask);
-                        } catch (error) {
-                          console.error("Error fetching task:", error);
-                          setSelectedTask(task);
-                        }
-                      }}
+                      onClick={() => navigate(`/tasks/${task.task_id}`)}
                       className="neo-icon w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--brand)]/20"
                       title="View Task"
                     >
@@ -887,15 +863,9 @@ export const TaskManager = ({
             {tasksForDay.map((task) => (
               <div
                 key={task.task_id}
-                onClick={async (e) => {
+                onClick={(e) => {
                   e.stopPropagation();
-                  try {
-                    const freshTask = await apiClient.getTask(task.task_id);
-                    setSelectedTask(freshTask);
-                  } catch (error) {
-                    console.error("Error fetching task:", error);
-                    setSelectedTask(task);
-                  }
+                  navigate(`/tasks/${task.task_id}`);
                 }}
                 className={`text-xs p-1.5 rounded truncate cursor-pointer hover:opacity-80 transition-opacity ${
                   task.status === "COMPLETED"
